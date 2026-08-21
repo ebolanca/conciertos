@@ -24,6 +24,28 @@ class ConcertFinder:
         self.data_dir.mkdir(exist_ok=True)
         self.artists_file = self.data_dir / "artists.json"
         self.concerts_file = self.data_dir / "concerts.json"
+        self.artist_photo_cache = {}
+
+    def _get_artist_photo(self, artist: str) -> str:
+        if not artist:
+            return ""
+        key = artist.strip().lower()
+        if key in self.artist_photo_cache:
+            return self.artist_photo_cache[key]
+        try:
+            url = f"https://api.deezer.com/search/artist?q={urllib.parse.quote(artist)}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(url, headers=headers, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict) and data.get("data"):
+                    img = data["data"][0].get("picture_xl") or data["data"][0].get("picture_big") or data["data"][0].get("picture_medium") or ""
+                    if img:
+                        self.artist_photo_cache[key] = img
+                        return img
+        except Exception:
+            pass
+        return ""
 
     def load_qualified_artists(self) -> list:
         if not self.artists_file.exists():
@@ -52,6 +74,7 @@ class ConcertFinder:
             if resp.status_code == 200:
                 data = resp.json()
                 if isinstance(data, list):
+                    artist_img = self._get_artist_photo(artist)
                     for ev in data:
                         venue = ev.get("venue", {})
                         city = venue.get("city", "").strip().lower()
@@ -61,7 +84,6 @@ class ConcertFinder:
                             event_date_raw = ev.get("datetime", "")
                             on_sale_raw = ev.get("on_sale_datetime", "")
                             
-                            # Determinar estado de la venta
                             now_str = datetime.now().isoformat()
                             if on_sale_raw and on_sale_raw > now_str:
                                 status = "PENDIENTE_VENTA"
@@ -81,7 +103,8 @@ class ConcertFinder:
                                 "ticket_sale_date": on_sale_raw or event_date_raw,
                                 "ticket_url": ticket_url,
                                 "status": status,
-                                "source": "Bandsintown"
+                                "source": "Bandsintown",
+                                "artist_image": artist_img
                             })
         except Exception as e:
             logger.debug(f"Error consultando Bandsintown para {artist}: {e}")
@@ -107,6 +130,7 @@ class ConcertFinder:
                 data = resp.json()
                 embedded = data.get("_embedded", {})
                 raw_events = embedded.get("events", [])
+                artist_img = self._get_artist_photo(artist)
                 for ev in raw_events:
                     sales = ev.get("sales", {}).get("public", {})
                     start_sale = sales.get("startDateTime", "")
@@ -133,7 +157,8 @@ class ConcertFinder:
                         "ticket_sale_date": start_sale or event_date,
                         "ticket_url": ev.get("url", ""),
                         "status": status,
-                        "source": "Ticketmaster"
+                        "source": "Ticketmaster",
+                        "artist_image": artist_img
                     })
         except Exception as e:
             logger.debug(f"Error consultando Ticketmaster para {artist}: {e}")
@@ -141,56 +166,57 @@ class ConcertFinder:
         return events
 
     def search_concerts(self) -> dict:
-        artists = self.load_qualified_artists()
-        logger.info(f"Buscando conciertos en Madrid para {len(artists)} artistas cualificados...")
-        
-        # Cargar conciertos guardados previamente para no perder estados como 'COMPRADO'
+        qualified_artists = self.load_qualified_artists()
+        logger.info(f"Buscando conciertos en Madrid para {len(qualified_artists)} artistas cualificados...")
+
         existing_concerts = {}
         if self.concerts_file.exists():
             try:
                 with open(self.concerts_file, "r", encoding="utf-8") as f:
                     old_data = json.load(f)
-                    for item in old_data.get("concerts", []):
-                        existing_concerts[item["id"]] = item
+                    for c in old_data.get("concerts", []):
+                        existing_concerts[c["id"]] = c
             except Exception:
                 pass
 
-        all_found = {}
-        for artist in artists:
-            bit_events = self._query_bandsintown(artist)
-            tm_events = self._query_ticketmaster(artist)
-            
-            combined = bit_events + tm_events
-            for ev in combined:
-                ev_id = ev["id"]
-                # Preservar estado 'COMPRADO' o 'IGNORADO' si existía
-                if ev_id in existing_concerts and existing_concerts[ev_id].get("status") == "COMPRADO":
-                    ev["status"] = "COMPRADO"
-                all_found[ev_id] = ev
+        all_concerts = []
+        for artist in qualified_artists:
+            artist_events = self._query_bandsintown(artist)
+            if not artist_events:
+                artist_events = self._query_ticketmaster(artist)
 
-        for ev_id, ev in existing_concerts.items():
-            if ev_id.startswith("manual_") or ev.get("source") in ["Manual", "Movistar Arena"]:
-                all_found[ev_id] = ev
+            for ev in artist_events:
+                cid = ev["id"]
+                if cid in existing_concerts:
+                    old_c = existing_concerts[cid]
+                    ev["status"] = old_c.get("status", ev["status"])
+                    ev["notified"] = old_c.get("notified", False)
+                    if "ticket_pdf" in old_c:
+                        ev["ticket_pdf"] = old_c["ticket_pdf"]
+                    if "ticket_pdf_path" in old_c:
+                        ev["ticket_pdf_path"] = old_c["ticket_pdf_path"]
+                all_concerts.append(ev)
 
-        concert_list = list(all_found.values())
-        
+        pending_count = sum(1 for c in all_concerts if c["status"] == "PENDIENTE_VENTA")
+        on_sale_count = sum(1 for c in all_concerts if c["status"] in ("ENTRADAS_A_LA_VENTA", "INTERESADO"))
+        bought_count = sum(1 for c in all_concerts if c["status"] == "COMPRADO")
+
         result = {
-            "last_check": datetime.now().isoformat(),
-            "target_city": "Madrid",
-            "total_concerts_found": len(concert_list),
-            "pending_sale_count": len([c for c in concert_list if c["status"] == "PENDIENTE_VENTA"]),
-            "on_sale_count": len([c for c in concert_list if c["status"] == "ENTRADAS_A_LA_VENTA"]),
-            "bought_count": len([c for c in concert_list if c["status"] == "COMPRADO"]),
-            "concerts": sorted(concert_list, key=lambda x: x.get("event_date", ""))
+            "last_updated": datetime.now().isoformat(),
+            "total_concerts_found": len(all_concerts),
+            "pending_sale_count": pending_count,
+            "on_sale_count": on_sale_count,
+            "bought_count": bought_count,
+            "concerts": all_concerts
         }
 
         with open(self.concerts_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Búsqueda finalizada. Conciertos en Madrid encontrados: {len(concert_list)}")
+        logger.info(f"Búsqueda finalizada. {len(all_concerts)} conciertos encontrados.")
         return result
 
 if __name__ == "__main__":
     finder = ConcertFinder()
     res = finder.search_concerts()
-    print(json.dumps(res, indent=2, ensure_ascii=False))
+    print(f"Búsqueda finalizada: {res['total_concerts_found']} conciertos encontrados.")

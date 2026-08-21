@@ -8,8 +8,8 @@
     <style>
         :root {
             --bg-color: #0b0f19;
-            --card-bg: rgba(22, 31, 49, 0.75);
-            --card-border: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(22, 31, 49, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
             --primary: #6366f1;
             --primary-hover: #4f46e5;
             --accent-green: #10b981;
@@ -28,7 +28,7 @@
         .btn { background: var(--primary); color: white; border: none; padding: 0.7rem 1.2rem; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; position: relative; z-index: 2; }
         .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; }
-        .btn-outline { background: rgba(11, 15, 25, 0.5); border: 1px solid var(--card-border); color: var(--text-main); backdrop-filter: blur(4px); }
+        .btn-outline { background: rgba(11, 15, 25, 0.6); border: 1px solid var(--card-border); color: var(--text-main); backdrop-filter: blur(4px); }
         .btn-outline:hover { background: rgba(255, 255, 255, 0.12); }
         .btn-amber { background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; backdrop-filter: blur(4px); }
         .btn-amber:hover { background: rgba(245, 158, 11, 0.35); }
@@ -44,8 +44,8 @@
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
         .concert-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         .concert-card:hover { border-color: rgba(99, 102, 241, 0.5); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
-        .card-bg-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center center; opacity: 0.22; filter: saturate(1.2) contrast(1.1); z-index: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.4s ease; }
-        .concert-card:hover .card-bg-overlay { opacity: 0.38; transform: scale(1.04); }
+        .card-bg-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center top; opacity: 0.12; filter: grayscale(15%) contrast(1.1); z-index: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.4s ease; }
+        .concert-card:hover .card-bg-overlay { opacity: 0.22; transform: scale(1.04); }
         .card-content { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
         .concert-card::before { content: ""; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: var(--primary); z-index: 2; }
         .concert-card.pendiente::before { background: var(--accent-amber); }
@@ -58,7 +58,7 @@
         .badge-purple { background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.4); }
         .artist-name { font-size: 1.45rem; font-weight: 700; margin-bottom: 0.35rem; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
         .venue-info { color: #e5e7eb; font-size: 0.95rem; margin-bottom: 1rem; text-shadow: 0 1px 4px rgba(0,0,0,0.8); font-weight: 500; }
-        .details-list { font-size: 0.9rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem; background: rgba(11, 15, 25, 0.5); padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .details-list { font-size: 0.9rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem; background: rgba(11, 15, 25, 0.6); padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }
         .details-list div { display: flex; justify-content: space-between; }
         .details-list span.key { color: var(--text-muted); }
         .details-list span.val { font-weight: 600; color: white; }
@@ -66,7 +66,7 @@
         .toggle-btn-badge { background: rgba(11, 15, 25, 0.6); border: 1px solid var(--card-border); color: #a5b4fc; padding: 0.3rem 0.75rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; transition: background 0.2s ease; }
         .card-header-clickable:hover .toggle-btn-badge { background: rgba(99, 102, 241, 0.3); color: white; }
         .collapsible-dates { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--card-border); display: flex; flex-direction: column; gap: 0.85rem; position: relative; z-index: 2; }
-        .sub-concert-item { background: rgba(11, 15, 25, 0.75); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(8px); }
+        .sub-concert-item { background: rgba(11, 15, 25, 0.8); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(8px); }
         .sub-concert-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
         .sub-date { font-weight: 600; color: var(--text-main); }
         .sub-venue { font-size: 0.82rem; color: var(--text-muted); }
@@ -109,20 +109,20 @@
         </div>
     </div>
     <script>
-        const ARTIST_IMAGES = {
-            "alex ubago": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop",
-            "amaral": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1000&auto=format&fit=crop",
-            "morat": "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1000&auto=format&fit=crop",
-            "pitbull": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop",
-            "default": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop"
-        };
-        function getArtistImage(artistName) {
-            if (!artistName) return ARTIST_IMAGES["default"];
-            const nameLower = artistName.trim().toLowerCase();
-            for (const key in ARTIST_IMAGES) {
-                if (nameLower.includes(key)) return ARTIST_IMAGES[key];
-            }
-            return ARTIST_IMAGES["default"];
+        const ARTIST_PHOTO_CACHE = {};
+        async function fetchArtistPhoto(artistName) {
+            if (!artistName) return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
+            const key = artistName.trim().toLowerCase();
+            if (ARTIST_PHOTO_CACHE[key]) return ARTIST_PHOTO_CACHE[key];
+            try {
+                const res = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}`);
+                const data = await res.json();
+                if (data && data.data && data.data.length > 0) {
+                    const img = data.data[0].picture_xl || data.data[0].picture_big || data.data[0].picture_medium;
+                    if (img) { ARTIST_PHOTO_CACHE[key] = img; return img; }
+                }
+            } catch (e) {}
+            return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
         }
         function formatDate(isoStr) {
             if (!isoStr) return "Por determinar";
@@ -145,7 +145,7 @@
                 document.getElementById("stat-artists").innerText = data.qualified_artists_count || 0;
                 document.getElementById("stat-concerts").innerText = data.total_concerts_found || 0;
                 document.getElementById("stat-pending").innerText = data.pending_sale_count || 0;
-                renderConcerts(data.concerts || []);
+                await renderConcerts(data.concerts || []);
                 renderArtists(data.qualified_artists || {});
             } catch (err) { console.error("Error cargando datos:", err); }
         }
@@ -187,12 +187,12 @@
                 const res = await fetch("/api/upload_ticket", { method: "POST", body: formData });
                 const data = await res.json();
                 if (data.status === "ok") {
-                    alert("¡Entrada PDF subida correctamente! Se ha programado el evento del DÍA DEL CONCIERTO (alarmas 3d, 1d y 3h + PDF adjunto) en Google Calendar y notificado en WhatsApp.");
+                    alert("¡Entrada PDF subida correctamente! Se ha programado el evento del DÍA DEL CONCIERTO en Google Calendar y notificado en WhatsApp.");
                     loadData();
                 } else { alert("Error subiendo PDF: " + (data.message || "Error desconocido")); }
             } catch (err) { alert("Error de conexión al subir la entrada."); }
         }
-        function renderConcerts(concerts) {
+        async function renderConcerts(concerts) {
             const grid = document.getElementById("concerts-grid");
             if (!concerts || concerts.length === 0) {
                 grid.innerHTML = '<p style="color: var(--text-muted);">No se han detectado conciertos en Madrid actualmente.</p>';
@@ -204,8 +204,8 @@
                 if (!grouped[key]) grouped[key] = [];
                 grouped[key].push(c);
             });
-            grid.innerHTML = Object.entries(grouped).map(([artist, list]) => {
-                const bgImg = getArtistImage(artist);
+            const cardHtmlPromises = Object.entries(grouped).map(async ([artist, list]) => {
+                const bgImg = list[0].artist_image || await fetchArtistPhoto(artist);
                 if (list.length === 1) {
                     const c = list[0];
                     let badgeClass = "badge-purple";
@@ -237,7 +237,9 @@
                     }).join("");
                     return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div class="card-header-clickable" onclick="toggleGroup('${cardId}')"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;"><span class="badge badge-amber">Varias fechas (${list.length})</span><span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span></div><div class="artist-name">${artist}</div><div class="venue-info">📍 ${venues}</div><div class="details-list"><div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div>${boughtCount > 0 ? `<div><span class="key">Entradas compradas:</span> <span class="val" style="color: var(--accent-green);">${boughtCount} de ${list.length}</span></div>` : ""}</div></div><div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">${subItems}</div></div></div>`;
                 }
-            }).join("");
+            });
+            const cardHtmls = await Promise.all(cardHtmlPromises);
+            grid.innerHTML = cardHtmls.join("");
         }
         function renderArtists(artistsObj) {
             const tbody = document.getElementById("artists-table-body");
@@ -247,7 +249,7 @@
         }
         async function triggerScan() { alert("Iniciando escaneo de biblioteca y búsqueda de conciertos..."); await fetch("/api/scan", { method: "POST" }); loadData(); }
         async function testWhatsApp() { const res = await fetch("/api/test_whatsapp", { method: "POST" }); const data = await res.json(); alert(data.message || "Prueba enviada a WhatsApp"); }
-        async function markBought(concertId) { await fetch("/api/buy_ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ concert_id: concertId }) }); alert("¡Genial! Se ha programado el evento del DÍA DEL CONCIERTO en tu Google Calendar (alarmas 3d, 1d y 3h) y notificado en WhatsApp."); loadData(); }
+        async function markBought(concertId) { await fetch("/api/buy_ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ concert_id: concertId }) }); alert("¡Genial! Se ha programado el evento del DÍA DEL CONCIERTO en tu Google Calendar y notificado en WhatsApp."); loadData(); }
         document.addEventListener("DOMContentLoaded", loadData);
     </script>
 </body>
