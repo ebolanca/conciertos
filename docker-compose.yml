@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  madrid-concert-notifier:
+    build: .
+    container_name: madrid-concert-notifier
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      # Carpeta de datos persistentes (artistas, conciertos y calendario .ics)
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
+      
+      # Montaje de la carpeta de música de tu servidor OMEN
+      # Ajusta el origen si ejecutas docker directamente en OMEN
+      - "D:/media-library/music:/media:ro"

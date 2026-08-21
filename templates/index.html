@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Madrid Concert Notifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 31, 49, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .title-group h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .title-group p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.25rem;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* Sections */
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .concert-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .concert-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .concert-card.pendiente::before { background: var(--accent-amber); }
+        .concert-card.comprado::before { background: var(--accent-green); }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.65rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            align-self: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-purple { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+        .artist-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .venue-info {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .details-list {
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .details-list div {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .details-list span.key { color: var(--text-muted); }
+        .details-list span.val { font-weight: 600; }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .card-actions .btn {
+            flex: 1;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        /* Artists Table */
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td { font-size: 0.95rem; }
+
+        tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="title-group">
+                <h1>🎸 Madrid Concert Notifier</h1>
+                <p>Monitoreo automático de conciertos en Madrid desde tu servidor local</p>
+            </div>
+            <div class="action-btns">
+                <button class="btn btn-outline" onclick="triggerScan()">🔄 Escanear Biblioteca</button>
+                <button class="btn btn-outline" onclick="testWhatsApp()">💬 Probar WhatsApp</button>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Canciones Escaneadas</div>
+                <div class="value" id="stat-scanned">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Artistas Favoritos (≥3 Canciones)</div>
+                <div class="value" id="stat-artists">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Conciertos en Madrid</div>
+                <div class="value" id="stat-concerts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pendientes de Entradas</div>
+                <div class="value" id="stat-pending">0</div>
+            </div>
+        </div>
+
+        <!-- Concerts Section -->
+        <h2 class="section-title">📅 Próximos Conciertos en Madrid</h2>
+        <div class="cards-grid" id="concerts-grid">
+            <p style="color: var(--text-muted);">Cargando conciertos...</p>
+        </div>
+
+        <!-- Artists Section -->
+        <h2 class="section-title">🎤 Artistas Cualificados (Biblioteca Servidor)</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Artista</th>
+                        <th>Canciones en Servidor</th>
+                        <th>Muestra de Pistas</th>
+                    </tr>
+                </thead>
+                <tbody id="artists-table-body">
+                    <tr><td colspan="3" style="color: var(--text-muted);">Cargando artistas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('stat-scanned').innerText = data.total_files_scanned || 0;
+                document.getElementById('stat-artists').innerText = data.qualified_artists_count || 0;
+                document.getElementById('stat-concerts').innerText = data.total_concerts_found || 0;
+                document.getElementById('stat-pending').innerText = data.pending_sale_count || 0;
+
+                renderConcerts(data.concerts || []);
+                renderArtists(data.qualified_artists || {});
+            } catch (err) {
+                console.error("Error cargando datos:", err);
+            }
+        }
+
+        function renderConcerts(concerts) {
+            const grid = document.getElementById('concerts-grid');
+            if (!concerts || concerts.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted);">No se han detectado conciertos en Madrid actualmente.</p>';
+                return;
+            }
+
+            grid.innerHTML = concerts.map(c => {
+                let badgeClass = 'badge-purple';
+                let statusText = 'Entradas a la Venta';
+                let cardClass = '';
+
+                if (c.status === 'PENDIENTE_VENTA') {
+                    badgeClass = 'badge-amber';
+                    statusText = 'Pendiente de Salida a la Venta';
+                    cardClass = 'pendiente';
+                } else if (c.status === 'COMPRADO') {
+                    badgeClass = 'badge-green';
+                    statusText = 'Entradas Compradas 🎟️';
+                    cardClass = 'comprado';
+                }
+
+                return `
+                    <div class="concert-card ${cardClass}">
+                        <div>
+                            <span class="badge ${badgeClass}">${statusText}</span>
+                            <div class="artist-name">${c.artist}</div>
+                            <div class="venue-info">📍 ${c.venue || 'Madrid'}</div>
+                            <div class="details-list">
+                                <div><span class="key">Fecha Concierto:</span> <span class="val">${c.event_date || 'Por determinar'}</span></div>
+                                <div><span class="key">Salida a Venta:</span> <span class="val">${c.ticket_sale_date || 'Ya disponible'}</span></div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            ${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : ''}
+                            ${c.status !== 'COMPRADO' ? `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>` : '<button class="btn btn-outline" disabled>✓ En Calendario</button>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderArtists(artistsObj) {
+            const tbody = document.getElementById('artists-table-body');
+            const entries = Object.entries(artistsObj);
+            
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="color: var(--text-muted);">No se encontraron artistas con 3 o más canciones.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = entries.map(([name, info]) => `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td><span class="badge badge-purple">${info.song_count} canciones</span></td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">${(info.songs_sample || []).join(', ')}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function triggerScan() {
+            alert("Iniciando escaneo de biblioteca y búsqueda de conciertos...");
+            await fetch('/api/scan', { method: 'POST' });
+            loadData();
+        }
+
+        async function testWhatsApp() {
+            const res = await fetch('/api/test_whatsapp', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message || "Prueba enviada a WhatsApp");
+        }
+
+        async function markBought(concertId) {
+            await fetch('/api/buy_ticket', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concert_id: concertId })
+            });
+            alert("¡Genial! Se ha guardado el estado y se ha programado el evento del concierto a las 9:00 AM en tu calendario.");
+            loadData();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

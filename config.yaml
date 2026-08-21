@@ -1,0 +1,39 @@
+# Configuración de Madrid Concert Notifier
+
+app:
+  name: "Madrid Concert Notifier"
+  port: 8086
+  host: "0.0.0.0"
+
+scanner:
+  # Rutas a escanear (soporta carpetas individuales o lista de rutas)
+  music_folder:
+    - "\\\\100.95.217.45\\omen D\\Docker\\media-server"
+    - "\\\\100.95.217.45\\omen D\\media-library\\music-videos"
+  docker_music_folder: "/media"
+  min_songs_threshold: 3
+  supported_extensions:
+    - ".mp3"
+    - ".flac"
+    - ".m4a"
+    - ".ogg"
+    - ".wav"
+    - ".aac"
+
+concerts:
+  target_city: "Madrid"
+  target_country_code: "ES"
+  ticketmaster_api_key: ""  # Opcional
+  include_unsold_events: true  # Conciertos anunciados pero pendientes de venta de entradas
+
+whatsapp:
+  enabled: true
+  api_url: "http://100.95.217.45:8080/send-message"
+  sender_number: "694262385"
+  recipient_number: "622609030"
+
+google_calendar:
+  enabled: true
+  calendar_id: "primary"
+  timezone: "Europe/Madrid"
+  alert_time: "09:00"
