@@ -90,6 +90,12 @@
             transform: translateY(-1px);
         }
 
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
         .btn-outline {
             background: transparent;
             border: 1px solid var(--card-border);
@@ -149,7 +155,7 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
             margin-bottom: 3rem;
         }
@@ -165,6 +171,12 @@
             justify-content: space-between;
             position: relative;
             overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .concert-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
         .concert-card::before {
@@ -179,6 +191,7 @@
 
         .concert-card.pendiente::before { background: var(--accent-amber); }
         .concert-card.comprado::before { background: var(--accent-green); }
+        .concert-card.multiple-dates::before { background: linear-gradient(to bottom, #f59e0b, #6366f1); }
 
         .badge {
             display: inline-block;
@@ -209,7 +222,7 @@
 
         .details-list {
             font-size: 0.9rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
             display: flex;
             flex-direction: column;
             gap: 0.4rem;
@@ -222,6 +235,78 @@
 
         .details-list span.key { color: var(--text-muted); }
         .details-list span.val { font-weight: 600; }
+
+        .card-header-clickable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-btn-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            color: #a5b4fc;
+            padding: 0.3rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s ease;
+        }
+
+        .card-header-clickable:hover .toggle-btn-badge {
+            background: rgba(99, 102, 241, 0.2);
+            color: white;
+        }
+
+        /* Collapsible List */
+        .collapsible-dates {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--card-border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .sub-concert-item {
+            background: rgba(11, 15, 25, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sub-concert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .sub-date {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .sub-venue {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .sub-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+        }
+
+        .sub-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
 
         .card-actions {
             display: flex;
@@ -324,6 +409,30 @@
     </div>
 
     <script>
+        function formatDate(isoStr) {
+            if (!isoStr) return 'Por determinar';
+            try {
+                const dt = new Date(isoStr);
+                if (isNaN(dt.getTime())) return isoStr;
+                return dt.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }) + (isoStr.includes('T') ? ' ' + dt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '');
+            } catch {
+                return isoStr;
+            }
+        }
+
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
         async function loadData() {
             try {
                 const res = await fetch('/api/stats');
@@ -341,6 +450,17 @@
             }
         }
 
+        function toggleGroup(cardId) {
+            const el = document.getElementById('collapsible-' + cardId);
+            const badge = document.getElementById('toggle-badge-' + cardId);
+            if (!el) return;
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'flex' : 'none';
+            if (badge) {
+                badge.innerHTML = isHidden ? '▲ Ocultar fechas' : '▼ Ver fechas';
+            }
+        }
+
         function renderConcerts(concerts) {
             const grid = document.getElementById('concerts-grid');
             if (!concerts || concerts.length === 0) {
@@ -348,38 +468,97 @@
                 return;
             }
 
-            grid.innerHTML = concerts.map(c => {
-                let badgeClass = 'badge-purple';
-                let statusText = 'Entradas a la Venta';
-                let cardClass = '';
+            // Agrupar conciertos por artista
+            const grouped = {};
+            concerts.forEach(c => {
+                const key = c.artist.trim();
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(c);
+            });
 
-                if (c.status === 'PENDIENTE_VENTA') {
-                    badgeClass = 'badge-amber';
-                    statusText = 'Pendiente de Salida a la Venta';
-                    cardClass = 'pendiente';
-                } else if (c.status === 'COMPRADO') {
-                    badgeClass = 'badge-green';
-                    statusText = 'Entradas Compradas 🎟️';
-                    cardClass = 'comprado';
-                }
+            grid.innerHTML = Object.entries(grouped).map(([artist, list]) => {
+                if (list.length === 1) {
+                    const c = list[0];
+                    let badgeClass = 'badge-purple';
+                    let statusText = 'Entradas a la Venta';
+                    let cardClass = '';
 
-                return `
-                    <div class="concert-card ${cardClass}">
-                        <div>
-                            <span class="badge ${badgeClass}">${statusText}</span>
-                            <div class="artist-name">${c.artist}</div>
-                            <div class="venue-info">📍 ${c.venue || 'Madrid'}</div>
-                            <div class="details-list">
-                                <div><span class="key">Fecha Concierto:</span> <span class="val">${c.event_date || 'Por determinar'}</span></div>
-                                <div><span class="key">Salida a Venta:</span> <span class="val">${c.ticket_sale_date || 'Ya disponible'}</span></div>
+                    if (c.status === 'PENDIENTE_VENTA') {
+                        badgeClass = 'badge-amber';
+                        statusText = 'Pendiente de Salida a la Venta';
+                        cardClass = 'pendiente';
+                    } else if (c.status === 'COMPRADO') {
+                        badgeClass = 'badge-green';
+                        statusText = 'Entradas Compradas 🎟️';
+                        cardClass = 'comprado';
+                    }
+
+                    return `
+                        <div class="concert-card ${cardClass}">
+                            <div>
+                                <span class="badge ${badgeClass}">${statusText}</span>
+                                <div class="artist-name">${c.artist}</div>
+                                <div class="venue-info">📍 ${c.venue || 'Madrid'}</div>
+                                <div class="details-list">
+                                    <div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div>
+                                    <div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div>
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                ${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : ''}
+                                ${c.status !== 'COMPRADO' ? `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>` : '<button class="btn btn-outline" disabled>✓ En Calendario</button>'}
                             </div>
                         </div>
-                        <div class="card-actions">
-                            ${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : ''}
-                            ${c.status !== 'COMPRADO' ? `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>` : '<button class="btn btn-outline" disabled>✓ En Calendario</button>'}
+                    `;
+                } else {
+                    // Múltiples fechas para un mismo artista
+                    const cardId = 'card-' + hashCode(artist);
+                    const venues = [...new Set(list.map(c => c.venue))].join(', ');
+                    const boughtCount = list.filter(c => c.status === 'COMPRADO').length;
+                    
+                    let cardClass = 'multiple-dates';
+                    if (boughtCount > 0) cardClass += ' comprado';
+
+                    const subItems = list.map(c => {
+                        let subBadge = c.status === 'COMPRADO' 
+                            ? '<span class="badge badge-green">✓ Entrada Comprada</span>' 
+                            : (c.status === 'PENDIENTE_VENTA' ? '<span class="badge badge-amber">Pendiente Venta</span>' : '<span class="badge badge-purple">Entradas Venta</span>');
+
+                        return `
+                            <div class="sub-concert-item">
+                                <div class="sub-concert-header">
+                                    <div class="sub-date">📅 ${formatDate(c.event_date)}</div>
+                                    ${subBadge}
+                                </div>
+                                <div class="sub-venue">📍 ${c.venue || 'Madrid'}</div>
+                                <div class="sub-actions">
+                                    ${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline btn-sm">🛒 Comprar</a>` : ''}
+                                    ${c.status !== 'COMPRADO' ? `<button onclick="markBought('${c.id}')" class="btn btn-success btn-sm">¡Tengo Entrada!</button>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="concert-card ${cardClass}">
+                            <div class="card-header-clickable" onclick="toggleGroup('${cardId}')">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span class="badge badge-amber">Varias fechas (${list.length})</span>
+                                    <span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span>
+                                </div>
+                                <div class="artist-name">${artist}</div>
+                                <div class="venue-info">📍 ${venues}</div>
+                                <div class="details-list">
+                                    <div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div>
+                                    ${boughtCount > 0 ? `<div><span class="key">Entradas compradas:</span> <span class="val" style="color: var(--accent-green);">${boughtCount} de ${list.length}</span></div>` : ''}
+                                </div>
+                            </div>
+                            <div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">
+                                ${subItems}
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }).join('');
         }
 
