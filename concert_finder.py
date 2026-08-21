@@ -168,7 +168,7 @@ class ConcertFinder:
                     ev["status"] = "COMPRADO"
                 all_found[ev_id] = ev
 
-        for ev_id, evin existing_concerts.items():
+        for ev_id, ev in existing_concerts.items():
             if ev_id.startswith("manual_") or ev.get("source") in ["Manual", "Movistar Arena"]:
                 all_found[ev_id] = ev
 

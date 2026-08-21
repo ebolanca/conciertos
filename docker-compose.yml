@@ -13,6 +13,9 @@ services:
       # Carpeta de datos persistentes (artistas, conciertos y calendario .ics)
       - ./data:/app/data
       - ./config.yaml:/app/config.yaml
+      - ./templates:/app/templates
+      - ./concert_finder.py:/app/concert_finder.py
+      - ./main.py:/app/main.py
       
       # Montaje de la carpeta de música de tu servidor OMEN
       # Ajusta el origen si ejecutas docker directamente en OMEN
