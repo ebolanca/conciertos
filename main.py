@@ -43,7 +43,6 @@ def run_full_scan_task():
     concerts = concert_result.get("concerts", [])
     for concert in concerts:
         if concert.get("status") in ("PENDIENTE_VENTA", "ENTRADAS_A_LA_VENTA") and not concert.get("notified"):
-            # Fase 1: Notificación al momento por WhatsApp
             whatsapp.send_announcement_notification(concert)
             concert["notified"] = True
 
@@ -117,6 +116,30 @@ def express_interest(req: ConcertActionRequest):
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         return {"status": "ok", "message": f"Registrado interés en {target_concert['artist']}. Se ha añadido la alarma de salida a la venta a tu Google Calendar y WhatsApp."}
+
+    return {"status": "error", "message": "Concierto no encontrado."}
+
+@app.post("/api/cancel_interest")
+def cancel_interest(req: ConcertActionRequest):
+    concerts_file = Path("data/concerts.json")
+    if not concerts_file.exists():
+        return {"status": "error", "message": "No hay conciertos registrados"}
+
+    with open(concerts_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    target_concert = None
+    for c in data.get("concerts", []):
+        if c["id"] == req.concert_id:
+            c["status"] = "ENTRADAS_A_LA_VENTA"
+            target_concert = c
+            break
+
+    if target_concert:
+        with open(concerts_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        return {"status": "ok", "message": f"Se ha cancelado el interés en {target_concert['artist']}."}
 
     return {"status": "error", "message": "Concierto no encontrado."}
 
