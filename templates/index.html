@@ -227,12 +227,22 @@
                     if (c.status === "PENDIENTE_VENTA") { badgeClass = "badge-amber"; statusText = "Pendiente de Salida a la Venta"; cardClass = "pendiente"; }
                     else if (c.status === "INTERESADO") { badgeClass = "badge-amber"; statusText = "⭐ Interesado"; cardClass = "interesado"; }
                     else if (c.status === "COMPRADO") { badgeClass = "badge-green"; statusText = "Entradas Compradas 🎟️"; cardClass = "comprado"; }
-                    const pdfBtn = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline">📄 Ver Entrada PDF</a>` : "";
-                    const interestBtn = (c.status === "INTERESADO") 
-                        ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
-                        : ((c.status !== "COMPRADO") ? `<button onclick="expressInterest('${c.id}')" class="btn btn-amber">⭐ Me interesa</button>` : "");
-                    const buyBtn = c.status !== "COMPRADO" ? `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>` : "";
-                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div></div></div><div class="card-actions">${pdfBtn}${interestBtn}${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : ""}${buyBtn}<input type="file" id="pdf-input-${c.id}" accept="application/pdf" style="display:none" onchange="handlePdfUpload('${c.id}', this)"><button onclick="document.getElementById('pdf-input-${c.id}').click()" class="btn btn-outline" title="Subir entrada PDF">📎 Subir PDF</button></div></div></div>`;
+                    
+                    let actionButtonsHtml = "";
+                    if (c.status === "COMPRADO") {
+                        const pdfViewBtn = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline">📄 Ver Entrada PDF</a>` : "";
+                        const pdfUploadLabel = c.ticket_pdf ? "📎 Reemplazar PDF" : "📎 Subir PDF";
+                        const pdfUploadBtn = `<input type="file" id="pdf-input-${c.id}" accept="application/pdf" style="display:none" onchange="handlePdfUpload('${c.id}', this)"><button onclick="document.getElementById('pdf-input-${c.id}').click()" class="btn btn-outline">${pdfUploadLabel}</button>`;
+                        actionButtonsHtml = `${pdfViewBtn}${pdfUploadBtn}`;
+                    } else {
+                        const interestBtn = (c.status === "INTERESADO") 
+                            ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
+                            : `<button onclick="expressInterest('${c.id}')" class="btn btn-amber">⭐ Me interesa</button>`;
+                        const buyUrlBtn = c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : "";
+                        const buyMarkBtn = `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>`;
+                        actionButtonsHtml = `${interestBtn}${buyUrlBtn}${buyMarkBtn}`;
+                    }
+                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div></div></div><div class="card-actions">${actionButtonsHtml}</div></div></div>`;
                 } else {
                     const cardId = "card-" + hashCode(artist);
                     const venues = [...new Set(list.map(c => c.venue))].join(", ");
@@ -241,12 +251,21 @@
                     if (boughtCount > 0) cardClass += " comprado";
                     const subItems = list.map(c => {
                         let subBadge = c.status === "COMPRADO" ? '<span class="badge badge-green">✓ Entrada Comprada</span>' : (c.status === "INTERESADO" ? '<span class="badge badge-amber">⭐ Interesado</span>' : '<span class="badge badge-purple">Anunciado</span>');
-                        const pdfBtnSub = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline btn-sm">📄 Ver PDF</a>` : "";
-                        const interestBtnSub = (c.status === "INTERESADO")
-                            ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel btn-sm" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
-                            : ((c.status !== "COMPRADO") ? `<button onclick="expressInterest('${c.id}')" class="btn btn-amber btn-sm">⭐ Me interesa</button>` : "");
-                        const buyBtnSub = c.status !== "COMPRADO" ? `<button onclick="markBought('${c.id}')" class="btn btn-success btn-sm">¡Tengo Entrada!</button>` : "";
-                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"}</div><div class="sub-actions">${pdfBtnSub}${interestBtnSub}${c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline btn-sm">🛒 Comprar</a>` : ""}${buyBtnSub}<input type="file" id="pdf-input-${c.id}" accept="application/pdf" style="display:none" onchange="handlePdfUpload('${c.id}', this)"><button onclick="document.getElementById('pdf-input-${c.id}').click()" class="btn btn-outline btn-sm" title="Subir PDF">📎 Subir PDF</button></div></div>`;
+                        let subActionsHtml = "";
+                        if (c.status === "COMPRADO") {
+                            const pdfViewBtnSub = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline btn-sm">📄 Ver PDF</a>` : "";
+                            const pdfUploadLabelSub = c.ticket_pdf ? "📎 Reemplazar PDF" : "📎 Subir PDF";
+                            const pdfUploadBtnSub = `<input type="file" id="pdf-input-${c.id}" accept="application/pdf" style="display:none" onchange="handlePdfUpload('${c.id}', this)"><button onclick="document.getElementById('pdf-input-${c.id}').click()" class="btn btn-outline btn-sm">${pdfUploadLabelSub}</button>`;
+                            subActionsHtml = `${pdfViewBtnSub}${pdfUploadBtnSub}`;
+                        } else {
+                            const interestBtnSub = (c.status === "INTERESADO")
+                                ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel btn-sm" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
+                                : `<button onclick="expressInterest('${c.id}')" class="btn btn-amber btn-sm">⭐ Me interesa</button>`;
+                            const buyUrlBtnSub = c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline btn-sm">🛒 Comprar</a>` : "";
+                            const buyMarkBtnSub = `<button onclick="markBought('${c.id}')" class="btn btn-success btn-sm">¡Tengo Entrada!</button>`;
+                            subActionsHtml = `${interestBtnSub}${buyUrlBtnSub}${buyMarkBtnSub}`;
+                        }
+                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"}</div><div class="sub-actions">${subActionsHtml}</div></div>`;
                     }).join("");
                     return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div class="card-header-clickable" onclick="toggleGroup('${cardId}')"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;"><span class="badge badge-amber">Varias fechas (${list.length})</span><span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span></div><div class="artist-name">${artist}</div><div class="venue-info">📍 ${venues}</div><div class="details-list"><div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div>${boughtCount > 0 ? `<div><span class="key">Entradas compradas:</span> <span class="val" style="color: var(--accent-green);">${boughtCount} de ${list.length}</span></div>` : ""}</div></div><div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">${subItems}</div></div></div>`;
                 }

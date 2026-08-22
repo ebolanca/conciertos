@@ -1,6 +1,6 @@
 {
   "name": "conciertos",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Madrid Concert Notifier Dashboard & Service",
   "main": "main.py",
   "private": true

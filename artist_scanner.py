@@ -14,6 +14,13 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+RECORD_LABEL_KEYWORDS = {
+    "warner music", "warner", "codiscos", "sony music", "universal music",
+    "emi music", "discográfica", "archivos", "various artists", "varios artistas",
+    "v.a.", "va", "unknown artist", "desconocido", "compilation", "soundtrack",
+    "española", "siglo xxi", "música viejuna", "viejuna", "varios", "pop", "rock"
+}
+
 class ArtistScanner:
     def __init__(self, config_path="config.yaml"):
         with open(config_path, "r", encoding="utf-8") as f:
@@ -26,16 +33,12 @@ class ArtistScanner:
         self.artists_file = self.data_dir / "artists.json"
 
     def get_target_paths(self) -> list:
-        """Obtiene la lista de rutas a escanear (locales, red o Docker)."""
         paths = []
-        
-        # 1. Comprobar ruta Docker si existe dentro del contenedor
         docker_path = Path(self.config["scanner"].get("docker_music_folder", "/media"))
         if docker_path.exists():
             paths.append(docker_path)
             return paths
 
-        # 2. Rutas configuradas (pueden ser cadena o lista)
         raw_folders = self.config["scanner"].get("music_folder", [])
         if isinstance(raw_folders, str):
             raw_folders = [raw_folders]
@@ -49,40 +52,66 @@ class ArtistScanner:
 
         return paths
 
+    def _is_invalid_artist(self, name: str) -> bool:
+        if not name or len(name.strip()) < 2:
+            return True
+        n = name.strip().lower()
+        if n in RECORD_LABEL_KEYWORDS:
+            return True
+        for kw in RECORD_LABEL_KEYWORDS:
+            if kw in ("va", "v.a.") and n == kw:
+                return True
+            elif kw not in ("va", "v.a.") and kw in n:
+                return True
+        return False
+
     def _extract_artist(self, file_path: Path) -> str:
         artist_name = None
 
-        if MUTAGEN_AVAILABLE:
+        # 1. Prioridad absoluta: Parsear 'Artista - Titulo.ext' desde el nombre del archivo
+        stem = file_path.stem
+        if " - " in stem:
+            candidate = stem.split(" - ")[0].strip()
+            if candidate.lower().endswith(".temp"):
+                candidate = candidate[:-5].strip()
+            if not self._is_invalid_artist(candidate):
+                artist_name = candidate
+
+        # 2. Mutagen ID3 solo si el artista ID3 es válido y no es discográfica
+        if not artist_name and MUTAGEN_AVAILABLE:
             try:
                 audio = mutagen.File(str(file_path), easy=True)
                 if audio and "artist" in audio:
                     artists = audio["artist"]
-                    if isinstance(artists, list) and len(artists) > 0:
-                        artist_name = artists[0]
-                    elif isinstance(artists, str):
-                        artist_name = artists
+                    cand = artists[0] if isinstance(artists, list) and artists else str(artists)
+                    if not self._is_invalid_artist(cand):
+                        artist_name = cand
             except Exception:
                 pass
 
+        # 3. Nombre de carpeta contenedora si no es carpeta genérica / discográfica
         if not artist_name:
             parts = file_path.parts
             if len(parts) >= 2:
-                possible_artist = parts[-2]
-                if possible_artist.lower() in ("music", "media-server", "music-videos", "media-library"):
-                    artist_name = file_path.stem.split("-")[0].strip()
-                else:
-                    artist_name = possible_artist
+                folder_candidate = parts[-2].strip()
+                if not self._is_invalid_artist(folder_candidate):
+                    artist_name = folder_candidate
 
         if artist_name:
             artist_name = artist_name.strip()
             if "," in artist_name:
                 artist_name = artist_name.split(",")[0].strip()
+            if ";" in artist_name:
+                artist_name = artist_name.split(";")[0].strip()
 
-        return artist_name or "Desconocido"
+        if artist_name and not self._is_invalid_artist(artist_name):
+            return artist_name
+
+        return None
 
     def scan(self) -> dict:
         target_paths = self.get_target_paths()
-        logger.info(f"Iniciando escaneo en {len(target_paths)} rutas. Umbral mínimo: {self.min_songs} canciones.")
+        logger.info(f"Iniciando escaneo inteligente en {len(target_paths)} rutas. Umbral mínimo: {self.min_songs} canciones.")
 
         artist_songs = defaultdict(list)
         total_files_scanned = 0
@@ -98,7 +127,7 @@ class ArtistScanner:
                     if file_path.suffix.lower() in self.supported_exts:
                         total_files_scanned += 1
                         artist = self._extract_artist(file_path)
-                        if artist and artist != "Desconocido":
+                        if artist:
                             artist_songs[artist].append(file_path.name)
 
         qualified = {}
@@ -120,7 +149,7 @@ class ArtistScanner:
         with open(self.artists_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Escaneo completado. Pistas analizadas: {total_files_scanned}, Artistas cualificados (>= {self.min_songs} canciones): {len(qualified)}")
+        logger.info(f"Escaneo inteligente completado. Pistas analizadas: {total_files_scanned}, Artistas cualificados (>= {self.min_songs} canciones): {len(qualified)}")
         return result
 
 if __name__ == "__main__":
