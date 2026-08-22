@@ -97,7 +97,10 @@ def trigger_scan():
 @app.post("/api/test_whatsapp")
 def test_whatsapp_endpoint():
     res = whatsapp.send_test_message()
-    return {"status": "ok" if res else "error", "message": "Mensaje de prueba de WhatsApp procesado."}
+    if res:
+        return {"status": "ok", "message": "✅ Mensaje de prueba enviado con éxito a tu número de WhatsApp."}
+    else:
+        return {"status": "error", "message": "⚠️ No se pudo enviar el mensaje a WhatsApp. Revisa que el servicio de API de WhatsApp esté escuchando en la URL configurada en config.yaml."}
 
 @app.post("/api/express_interest")
 def express_interest(req: ConcertActionRequest):
