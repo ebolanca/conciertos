@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Madrid Concert Notifier</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0f19'/%3E%3Cpath d='M22 35 C22 28 28 22 35 22 L65 22 C72 22 78 28 78 35 L78 44 C72 44 72 56 78 56 L78 65 C78 72 72 78 65 78 L35 78 C28 78 22 72 22 65 L22 56 C28 56 28 44 22 44 Z' fill='%236366f1' stroke='%23a5b4fc' stroke-width='3'/%3E%3Ccircle cx='38' cy='50' r='5' fill='%23fbbf24'/%3E%3Cpath d='M54 40 L66 35 L66 57 A 5 5 0 1 1 60 52 L60 42 Z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0f19'/%3E%3Cpath d='M22 35 C22 28 28 22 35 22 L65 22 C72 22 78 28 78 35 L78 65 C78 72 72 78 65 78 L35 78 C28 78 22 72 22 65 L22 56 C28 56 28 44 22 44 Z' fill='%236366f1' stroke='%23a5b4fc' stroke-width='3'/%3E%3Ccircle cx='38' cy='50' r='5' fill='%23fbbf24'/%3E%3Cpath d='M54 40 L66 35 L66 57 A 5 5 0 1 1 60 52 L60 42 Z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -45,7 +45,7 @@
         .stat-card .value { font-size: 2rem; font-weight: 700; color: white; }
         .section-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
-        .concert-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.4rem; backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; height: 420px; max-height: 420px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .concert-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.4rem; backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; height: 440px; max-height: 440px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         .concert-card:hover { border-color: rgba(99, 102, 241, 0.5); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
         .card-bg-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center top; opacity: 0.12; filter: grayscale(15%) contrast(1.1); z-index: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.4s ease; }
         .concert-card:hover .card-bg-overlay { opacity: 0.22; transform: scale(1.04); }
@@ -61,7 +61,7 @@
         .badge-purple { background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.4); }
         .artist-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
         .venue-info { color: #e5e7eb; font-size: 0.9rem; margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,0.8); font-weight: 500; }
-        .details-list { font-size: 0.88rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; background: rgba(11, 15, 25, 0.65); padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }
+        .details-list { font-size: 0.85rem; margin-bottom: 0.65rem; display: flex; flex-direction: column; gap: 0.35rem; background: rgba(11, 15, 25, 0.65); padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }
         .details-list div { display: flex; justify-content: space-between; }
         .details-list span.key { color: var(--text-muted); }
         .details-list span.val { font-weight: 600; color: white; }
@@ -77,14 +77,22 @@
         .sub-venue { font-size: 0.8rem; color: var(--text-muted); }
         .sub-actions { display: flex; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap; }
         .sub-actions .btn { flex: 1; justify-content: center; }
-        .card-actions { display: flex; gap: 0.5rem; margin-top: auto; flex-wrap: wrap; position: relative; z-index: 2; }
-        .card-actions .btn { flex: 1; justify-content: center; font-size: 0.82rem; min-width: 90px; }
+        .card-actions { display: flex; gap: 0.4rem; margin-top: auto; flex-wrap: wrap; position: relative; z-index: 2; }
+        .card-actions .btn { flex: 1; justify-content: center; font-size: 0.8rem; min-width: 80px; padding: 0.55rem 0.8rem; }
         .table-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(12px); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th, td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--card-border); }
         th { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
         td { font-size: 0.95rem; }
         tr:last-child td { border-bottom: none; }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: #161f31; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; width: 90%; max-width: 500px; padding: 1.8rem; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: rgba(244,63,94,0.4); }
+        .modal-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .setlist-song-item { background: rgba(11,15,25,0.7); border: 1px solid rgba(255,255,255,0.06); padding: 0.6rem 0.8rem; border-radius: 10px; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -118,6 +126,10 @@
             <tbody id="artists-table-body"><tr><td colspan="3" style="color: var(--text-muted);">Cargando artistas...</td></tr></tbody></table>
         </div>
     </div>
+    <!-- Modal para Setlist -->
+    <div class="modal-overlay" id="setlist-modal"><div class="modal-box"><button class="modal-close" onclick="closeModal('setlist-modal')">✕</button><div class="modal-title" id="setlist-artist-title">Repertorio Gira</div><p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Canciones más probables que interpretará en directo:</p><div id="setlist-songs-container">Cargando...</div></div></div>
+    <!-- Modal para Cómo Llegar -->
+    <div class="modal-overlay" id="venue-modal"><div class="modal-box"><button class="modal-close" onclick="closeModal('venue-modal')">✕</button><div class="modal-title" id="venue-name-title">📍 Cómo Llegar</div><div id="venue-details-container">Cargando datos de transporte...</div></div></div>
     <script>
         const ARTIST_EXACT_PHOTOS = {
             "amaral": "/artist_images/amaral.jpg",
@@ -152,6 +164,32 @@
             let hash = 0;
             for (let i = 0; i < str.length; i++) { hash = (((hash << 5) - hash) + str.charCodeAt(i)) | 0; }
             return Math.abs(hash);
+        }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove("active"); }
+        async function openSetlistModal(artistName) {
+            document.getElementById("setlist-artist-title").innerText = "🎼 Setlist Gira: " + artistName;
+            document.getElementById("setlist-songs-container").innerHTML = "<p style='color:var(--text-muted)'>Cargando canciones...</p>";
+            document.getElementById("setlist-modal").classList.add("active");
+            try {
+                const res = await fetch("/api/setlist/" + encodeURIComponent(artistName));
+                const data = await res.json();
+                if (data.status === "ok" && data.songs) {
+                    document.getElementById("setlist-songs-container").innerHTML = data.songs.map(s => `<div class="setlist-song-item">🎵 ${s}</div>`).join("");
+                } else { document.getElementById("setlist-songs-container").innerHTML = "<p style='color:var(--text-muted)'>Setlist no disponible actualmente.</p>"; }
+            } catch { document.getElementById("setlist-songs-container").innerHTML = "<p style='color:var(--text-muted)'>Error cargando setlist.</p>"; }
+        }
+        async function openVenueModal(venueName) {
+            document.getElementById("venue-name-title").innerText = "📍 " + venueName;
+            document.getElementById("venue-details-container").innerHTML = "<p style='color:var(--text-muted)'>Cargando mapa y transporte...</p>";
+            document.getElementById("venue-modal").classList.add("active");
+            try {
+                const res = await fetch("/api/venue_info/" + encodeURIComponent(venueName));
+                const data = await res.json();
+                if (data.status === "ok" && data.venue) {
+                    const v = data.venue;
+                    document.getElementById("venue-details-container").innerHTML = `<div style="display:flex; flex-direction:column; gap:0.8rem;"><div style="background:rgba(11,15,25,0.7); padding:0.8rem; border-radius:10px; border:1px solid rgba(255,255,255,0.08);"><div style="font-weight:600; color:white; margin-bottom:0.3rem;">Dirección:</div><div style="font-size:0.9rem; color:var(--text-muted);">${v.address}</div></div><div style="background:rgba(11,15,25,0.7); padding:0.8rem; border-radius:10px; border:1px solid rgba(255,255,255,0.08);"><div style="font-weight:600; color:#a5b4fc; margin-bottom:0.3rem;">🚇 Metro / Cercanías:</div><div style="font-size:0.9rem; color:white;">${v.metro}</div></div><a href="${v.maps_url}" target="_blank" class="btn btn-success" style="justify-content:center; margin-top:0.5rem;">🗺️ Abrir Navegación en Google Maps</a></div>`;
+                }
+            } catch { document.getElementById("venue-details-container").innerHTML = "<p style='color:var(--text-muted)'>Error al cargar transporte.</p>"; }
         }
         async function loadData() {
             try {
@@ -239,19 +277,21 @@
                     
                     let actionButtonsHtml = "";
                     if (c.status === "COMPRADO") {
-                        const pdfViewBtn = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline">📄 Ver Entrada PDF</a>` : "";
+                        const pdfViewBtn = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline">📄 Ver PDF</a>` : "";
                         const pdfUploadLabel = c.ticket_pdf ? "📎 Reemplazar PDF" : "📎 Subir PDF";
                         const pdfUploadBtn = `<input type="file" id="pdf-input-${c.id}" accept="application/pdf" style="display:none" onchange="handlePdfUpload('${c.id}', this)"><button onclick="document.getElementById('pdf-input-${c.id}').click()" class="btn btn-outline">${pdfUploadLabel}</button>`;
                         actionButtonsHtml = `${pdfViewBtn}${pdfUploadBtn}`;
                     } else {
                         const interestBtn = (c.status === "INTERESADO") 
-                            ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
+                            ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel" title="Pulsar para cancelar interés">⭐ Cancelar</button>`
                             : `<button onclick="expressInterest('${c.id}')" class="btn btn-amber">⭐ Me interesa</button>`;
                         const buyUrlBtn = c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline">🛒 Comprar</a>` : "";
                         const buyMarkBtn = `<button onclick="markBought('${c.id}')" class="btn btn-success">¡Tengo Entrada!</button>`;
                         actionButtonsHtml = `${interestBtn}${buyUrlBtn}${buyMarkBtn}`;
                     }
-                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div></div></div><div class="card-actions">${actionButtonsHtml}</div></div></div>`;
+                    const mapBtn = `<button onclick="openVenueModal('${c.venue || "Madrid"}')" class="btn btn-outline" title="Cómo llegar en Metro y transporte">📍 Llegar</button>`;
+                    const setlistBtn = `<button onclick="openSetlistModal('${c.artist}')" class="btn btn-outline" title="Ver canciones de la gira">🎼 Setlist</button>`;
+                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div><div><span class="key">💰 Precios:</span> <span class="val" style="color:#fbbf24;">${c.price_range || "35€ - 90€"}</span></div></div></div><div class="card-actions">${actionButtonsHtml}${mapBtn}${setlistBtn}</div></div></div>`;
                 } else {
                     const cardId = "card-" + hashCode(artist);
                     const venues = [...new Set(list.map(c => c.venue))].join(", ");
@@ -268,15 +308,17 @@
                             subActionsHtml = `${pdfViewBtnSub}${pdfUploadBtnSub}`;
                         } else {
                             const interestBtnSub = (c.status === "INTERESADO")
-                                ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel btn-sm" title="Pulsar para cancelar interés">⭐ Interesado (Cancelar)</button>`
+                                ? `<button onclick="cancelInterest('${c.id}')" class="btn btn-cancel btn-sm" title="Pulsar para cancelar interés">⭐ Cancelar</button>`
                                 : `<button onclick="expressInterest('${c.id}')" class="btn btn-amber btn-sm">⭐ Me interesa</button>`;
                             const buyUrlBtnSub = c.ticket_url ? `<a href="${c.ticket_url}" target="_blank" class="btn btn-outline btn-sm">🛒 Comprar</a>` : "";
                             const buyMarkBtnSub = `<button onclick="markBought('${c.id}')" class="btn btn-success btn-sm">¡Tengo Entrada!</button>`;
                             subActionsHtml = `${interestBtnSub}${buyUrlBtnSub}${buyMarkBtnSub}`;
                         }
-                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"}</div><div class="sub-actions">${subActionsHtml}</div></div>`;
+                        const mapBtnSub = `<button onclick="openVenueModal('${c.venue || "Madrid"}')" class="btn btn-outline btn-sm" title="Cómo llegar">📍 Llegar</button>`;
+                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"} • 💰 ${c.price_range || "35€ - 90€"}</div><div class="sub-actions">${subActionsHtml}${mapBtnSub}</div></div>`;
                     }).join("");
-                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div class="card-header-clickable" onclick="toggleGroup('${cardId}')"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;"><span class="badge badge-amber">Varias fechas (${list.length})</span><span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span></div><div class="artist-name">${artist}</div><div class="venue-info">📍 ${venues}</div><div class="details-list"><div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div>${boughtCount > 0 ? `<div><span class="key">Entradas compradas:</span> <span class="val" style="color: var(--accent-green);">${boughtCount} de ${list.length}</span></div>` : ""}</div></div><div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">${subItems}</div></div></div>`;
+                    const setlistBtnGroup = `<button onclick="openSetlistModal('${artist}')" class="btn btn-outline btn-sm" style="margin-top:0.4rem; width:100%; justify-content:center;">🎼 Ver Setlist de la Gira</button>`;
+                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div class="card-header-clickable" onclick="toggleGroup('${cardId}')"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;"><span class="badge badge-amber">Varias fechas (${list.length})</span><span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span></div><div class="artist-name">${artist}</div><div class="venue-info">📍 ${venues}</div><div class="details-list"><div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div><div><span class="key">💰 Precios:</span> <span class="val" style="color:#fbbf24;">${list[0].price_range || "35€ - 90€"}</span></div></div></div><div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">${subItems}${setlistBtnGroup}</div></div></div>`;
                 }
             }).join("");
         }

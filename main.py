@@ -222,3 +222,139 @@ async def upload_ticket(concert_id: str = Form(...), file: UploadFile = File(...
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8086, reload=True)
+VENUE_INFO_MAP = {
+    "palacio vistalegre": {
+        "name": "Palacio Vistalegre",
+        "metro": "Vista Alegre (Línea 5) / Oporto (Líneas 5 y 6)",
+        "address": "Calle de Utebo, 1, 28025 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Palacio+Vistalegre+Madrid"
+    },
+    "la nueva cubierta de leganés": {
+        "name": "La Nueva Cubierta de Leganés",
+        "metro": "Casa del Reloj (MetroSur L12) / Leganés Central (Cercanías C5)",
+        "address": "Calle del Maestro, 4, 28914 Leganés, Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=La+Nueva+Cubierta+Leganes"
+    },
+    "wizink center": {
+        "name": "WiZink Center (Palacio de los Deportes)",
+        "metro": "Goya (Líneas 2 y 4) / O'Donnell (Línea 6)",
+        "address": "Av. Felipe II, s/n, 28009 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=WiZink+Center+Madrid"
+    },
+    "movistar arena": {
+        "name": "Movistar Arena (WiZink Center)",
+        "metro": "Goya (Líneas 2 y 4) / O'Donnell (Línea 6)",
+        "address": "Av. Felipe II, s/n, 28009 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=WiZink+Center+Madrid"
+    },
+    "estadio santiago bernabéu": {
+        "name": "Estadio Santiago Bernabéu",
+        "metro": "Santiago Bernabéu (Línea 10)",
+        "address": "Av. de Concha Espina, 1, 28036 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Estadio+Santiago+Bernabeu+Madrid"
+    },
+    "estadio bernabéu": {
+        "name": "Estadio Santiago Bernabéu",
+        "metro": "Santiago Bernabéu (Línea 10)",
+        "address": "Av. de Concha Espina, 1, 28036 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Estadio+Santiago+Bernabeu+Madrid"
+    },
+    "riyadh air metropolitano": {
+        "name": "Riyadh Air Metropolitano",
+        "metro": "Estadio Metropolitano (Línea 7)",
+        "address": "Av. de Luis Aragonés, 4, 28022 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Riyadh+Air+Metropolitano+Madrid"
+    },
+    "la riviera": {
+        "name": "Sala La Riviera",
+        "metro": "Puerta del Ángel (Línea 6) / Príncipe Pío (L1, L6, L10, R)",
+        "address": "Paseo Bajo de la Virgen del Puerto, s/n, 28005 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=La+Riviera+Madrid"
+    },
+    "teatro kapital": {
+        "name": "Teatro Kapital",
+        "metro": "Atocha (Línea 1) / Estación del Arte (Línea 1)",
+        "address": "Calle de Atocha, 125, 28012 Madrid",
+        "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Teatro+Kapital+Madrid"
+    }
+}
+
+ARTIST_SETLISTS = {
+    "evanescence": [
+        "1. Bring Me to Life", "2. Going Under", "3. Call Me When You're Sober",
+        "4. Lithium", "5. My Immortal", "6. What You Want", "7. Imaginary",
+        "8. Better Without You", "9. Wasted on You", "10. End of the Dream"
+    ],
+    "binomio de oro de américa": [
+        "1. Me Ilusioné", "2. Niña Bonita", "3. Quiero Que Seas Mi Estrella",
+        "4. Si Tu Amor No Vuelve", "5. Cómo Expresar Lo Que Siento", "6. Olvídala",
+        "7. Un Osito Dormilón", "8. Amigo", "9. Distintos Destinos", "10. Inmortal"
+    ],
+    "amaral": [
+        "1. El universo sobre mí", "2. Cómo hablar", "3. Días de verano",
+        "4. Marta, Sebas, Guille y los demás", "5. Kamikaze", "6. Sin ti no soy nada",
+        "7. Toda la noche en la calle", "8. Moriría por vos", "9. Hacia lo salvaje"
+    ],
+    "alex ubago": [
+        "1. Sin miedo a nada", "2. A gritos de esperanza", "3. Aunque no te pueda ver",
+        "4. ¿Qué pides tú?", "5. Me arrepiento", "6. Ella vive en mí", "7. Estar contigo"
+    ],
+    "morat": [
+        "1. Besos en guerra", "2. Cómo te atreves", "3. No se va", "4. Cuando nadie ve",
+        "5. Salir con vida", "6. Por fa no te vayas", "7. 506", "8. París"
+    ],
+    "aitana": [
+        "1. Las Babys", "2. Los Ángeles", "3. Vas a quedarte", "4. Mon Amour (Remix)",
+        "5. Formentera", "6. Mi Amor", "7. En El Coche", "8. 11 Razones"
+    ],
+    "the weeknd": [
+        "1. Blinding Lights", "2. Starboy", "3. The Hills", "4. Save Your Tears",
+        "5. Die For You", "6. Can't Feel My Face", "7. I Feel It Coming", "8. Creepin'"
+    ],
+    "shakira": [
+        "1. Hips Don't Lie", "2. Session 53 (BZRP)", "3. Te Felicito", "4. Monotonía",
+        "5. Waka Waka (This Time for Africa)", "6. Whenever, Wherever", "7. Inevitable"
+    ],
+    "pitbull": [
+        "1. Give Me Everything", "2. Timber", "3. Hotel Room Service", "4. Time of Our Lives",
+        "5. Fireball", "6. International Love", "7. Rain Over Me"
+    ],
+    "bryan adams": [
+        "1. Summer of '69", "2. (Everything I Do) I Do It for You", "3. Heaven",
+        "4. Run to You", "5. Please Forgive Me", "6. Cuts Like a Knife"
+    ]
+}
+
+@app.get("/api/venue_info/{venue_name}")
+def get_venue_info(venue_name: str):
+    key = venue_name.strip().lower()
+    for v_key, info in VENUE_INFO_MAP.items():
+        if v_key in key or key in v_key:
+            return {"status": "ok", "venue": info}
+    encoded = urllib.parse.quote(venue_name + " Madrid")
+    return {
+        "status": "ok",
+        "venue": {
+            "name": venue_name,
+            "metro": "Transporte Público Madrid",
+            "address": f"{venue_name}, Madrid",
+            "maps_url": f"https://www.google.com/maps/dir/?api=1&destination={encoded}"
+        }
+    }
+
+@app.get("/api/setlist/{artist_name}")
+def get_artist_setlist(artist_name: str):
+    key = artist_name.strip().lower()
+    for a_key, songs in ARTIST_SETLISTS.items():
+        if a_key in key or key in a_key:
+            return {"status": "ok", "artist": artist_name, "songs": songs}
+    
+    # Generic setlist fallback
+    fallback_songs = [
+        f"1. Éxito Principal - {artist_name}",
+        f"2. Gran Canción Gira 2026 - {artist_name}",
+        f"3. Tema Favorito Fans - {artist_name}",
+        f"4. Tema Acústico - {artist_name}",
+        f"5. Cierre de Concierto - {artist_name}"
+    ]
+    return {"status": "ok", "artist": artist_name, "songs": fallback_songs}
