@@ -123,6 +123,8 @@
             "amaral": "/artist_images/amaral.jpg",
             "alex ubago": "/artist_images/alex_ubago.jpg",
             "morat": "/artist_images/morat.jpg",
+            "binomio de oro de américa": "/artist_images/binomio_de_oro.jpg",
+            "binomio de oro": "/artist_images/binomio_de_oro.jpg",
             "the weeknd": "/artist_images/the_weeknd.jpg",
             "aitana": "/artist_images/aitana.jpg",
             "shakira": "/artist_images/shakira.jpg",
@@ -135,6 +137,7 @@
             if (!artistName) return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
             const key = artistName.trim().toLowerCase();
             if (ARTIST_EXACT_PHOTOS[key]) return ARTIST_EXACT_PHOTOS[key];
+            for (const k in ARTIST_EXACT_PHOTOS) { if (key.includes(k)) return ARTIST_EXACT_PHOTOS[k]; }
             return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
         }
         function formatDate(isoStr) {
