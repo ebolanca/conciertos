@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from datetime import datetime
 import yaml
 import requests
 
@@ -31,15 +32,43 @@ class WhatsAppService:
             cleaned = "34" + cleaned
         return cleaned
 
+    def _log_sent_message(self, message: str, phone: str):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        clean_msg = message.replace("\n", " ")
+        log_line = f"[{timestamp}] 📤 Mensaje enviado a +{phone}: {clean_msg}"
+        
+        # 1. Local data log
+        try:
+            data_log = Path("data/whatsapp_sent_messages.log")
+            data_log.parent.mkdir(parents=True, exist_ok=True)
+            with open(data_log, "a", encoding="utf-8") as f:
+                f.write(log_line + "\n")
+        except Exception:
+            pass
+        
+        # 2. PM2 log path
+        try:
+            pm2_log = Path.home() / ".pm2" / "logs" / "whatsapp-bot-conciertos-out.log"
+            pm2_log.parent.mkdir(parents=True, exist_ok=True)
+            with open(pm2_log, "a", encoding="utf-8") as f:
+                f.write(log_line + "\n")
+        except Exception:
+            pass
+
     def _send(self, message: str) -> bool:
         if not self.enabled:
             logger.warning("WhatsApp no está habilitado en config.yaml.")
             return False
         
+        res = False
         if self.provider == "meta" and self.meta_access_token and self.meta_phone_number_id:
-            return self._send_meta(message)
+            res = self._send_meta(message)
         else:
-            return self._send_http_gateway(message)
+            res = self._send_http_gateway(message)
+        
+        if res:
+            self._log_sent_message(message, self.phone_number)
+        return res
 
     def _send_meta(self, message: str) -> bool:
         url = f"https://graph.facebook.com/{self.meta_api_version}/{self.meta_phone_number_id}/messages"
