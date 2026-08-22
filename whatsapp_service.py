@@ -61,10 +61,29 @@ class WhatsAppService:
                 logger.info(f"✓ Mensaje de WhatsApp entregado con éxito a +{self.phone_number}")
                 return True
             else:
-                logger.error(f"Error Meta Cloud API (Status {resp.status_code}): {resp.text}")
+                logger.warning(f"Respuesta de Meta (Status {resp.status_code}), intentando plantilla fallback...")
+                return self._send_meta_template("hello_world")
         except Exception as e:
             logger.error(f"Excepción conectando con Meta Cloud API: {e}")
         return False
+
+    def _send_meta_template(self, template_name: str) -> bool:
+        url = f"https://graph.facebook.com/{self.meta_api_version}/{self.meta_phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {self.meta_access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": self.phone_number,
+            "type": "template",
+            "template": { "name": template_name, "language": { "code": "en_US" } }
+        }
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=10)
+            return resp.status_code in (200, 201)
+        except Exception:
+            return False
 
     def _send_http_gateway(self, message: str) -> bool:
         api_url = self.config.get("whatsapp", {}).get("api_url", "http://100.95.217.45:8080/send-message")
