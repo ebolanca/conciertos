@@ -32,6 +32,26 @@ class ConcertFinder:
         key = artist.strip().lower()
         if key in self.artist_photo_cache:
             return self.artist_photo_cache[key]
+        
+        LOCAL_PHOTOS = {
+            "amaral": "/artist_images/amaral.jpg",
+            "alex ubago": "/artist_images/alex_ubago.jpg",
+            "morat": "/artist_images/morat.jpg",
+            "binomio de oro de américa": "/artist_images/binomio_de_oro.jpg",
+            "binomio de oro": "/artist_images/binomio_de_oro.jpg",
+            "the weeknd": "/artist_images/the_weeknd.jpg",
+            "aitana": "/artist_images/aitana.jpg",
+            "shakira": "/artist_images/shakira.jpg",
+            "pitbull": "/artist_images/pitbull.jpg",
+            "la oreja de van gogh": "/artist_images/la_oreja_de_van_gogh.jpg",
+            "evanescence": "/artist_images/evanescence.jpg",
+            "bryan adams": "/artist_images/bryan_adams.jpg"
+        }
+        for k in LOCAL_PHOTOS:
+            if k in key:
+                self.artist_photo_cache[key] = LOCAL_PHOTOS[k]
+                return LOCAL_PHOTOS[k]
+
         try:
             url = f"https://api.deezer.com/search/artist?q={urllib.parse.quote(artist)}"
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -78,7 +98,6 @@ class ConcertFinder:
                     for ev in data:
                         venue = ev.get("venue", {})
                         city = venue.get("city", "").strip().lower()
-                        country = venue.get("country", "").strip()
                         
                         if self.target_city in city or "madrid" in city:
                             event_date_raw = ev.get("datetime", "")
@@ -179,7 +198,7 @@ class ConcertFinder:
             except Exception:
                 pass
 
-        all_concerts = []
+        newly_found = {}
         for artist in qualified_artists:
             artist_events = self._query_bandsintown(artist)
             if not artist_events:
@@ -187,15 +206,23 @@ class ConcertFinder:
 
             for ev in artist_events:
                 cid = ev["id"]
-                if cid in existing_concerts:
-                    old_c = existing_concerts[cid]
-                    ev["status"] = old_c.get("status", ev["status"])
-                    ev["notified"] = old_c.get("notified", False)
-                    if "ticket_pdf" in old_c:
-                        ev["ticket_pdf"] = old_c["ticket_pdf"]
-                    if "ticket_pdf_path" in old_c:
-                        ev["ticket_pdf_path"] = old_c["ticket_pdf_path"]
-                all_concerts.append(ev)
+                newly_found[cid] = ev
+
+        # Preservar TODOS los conciertos existentes y fusionar descubrimientos
+        merged_concerts_dict = dict(existing_concerts)
+        for cid, ev in newly_found.items():
+            if cid in merged_concerts_dict:
+                old_c = merged_concerts_dict[cid]
+                ev["status"] = old_c.get("status", ev["status"])
+                ev["notified"] = old_c.get("notified", False)
+                if "ticket_pdf" in old_c:
+                    ev["ticket_pdf"] = old_c["ticket_pdf"]
+                if "ticket_pdf_path" in old_c:
+                    ev["ticket_pdf_path"] = old_c["ticket_pdf_path"]
+            merged_concerts_dict[cid] = ev
+
+        all_concerts = list(merged_concerts_dict.values())
+        all_concerts.sort(key=lambda c: c.get("event_date") or "9999-12-31")
 
         pending_count = sum(1 for c in all_concerts if c["status"] == "PENDIENTE_VENTA")
         on_sale_count = sum(1 for c in all_concerts if c["status"] in ("ENTRADAS_A_LA_VENTA", "INTERESADO"))
@@ -213,7 +240,7 @@ class ConcertFinder:
         with open(self.concerts_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Búsqueda finalizada. {len(all_concerts)} conciertos encontrados.")
+        logger.info(f"Búsqueda finalizada. {len(all_concerts)} conciertos retenidos y actualizados.")
         return result
 
 if __name__ == "__main__":
