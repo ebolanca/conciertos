@@ -25,6 +25,10 @@ tickets_dir = Path("data/tickets")
 tickets_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/tickets", StaticFiles(directory="data/tickets"), name="tickets")
 
+artist_images_dir = Path("data/artists_images")
+artist_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/artist_images", StaticFiles(directory="data/artists_images"), name="artist_images")
+
 scanner = ArtistScanner()
 finder = ConcertFinder()
 gcal = GoogleCalendarService()
