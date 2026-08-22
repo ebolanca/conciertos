@@ -220,7 +220,13 @@
                 if (!grouped[key]) grouped[key] = [];
                 grouped[key].push(c);
             });
-            grid.innerHTML = Object.entries(grouped).map(([artist, list]) => {
+            const sortedArtistEntries = Object.entries(grouped).sort((a, b) => {
+                const minDateA = Math.min(...a[1].map(c => c.event_date ? new Date(c.event_date).getTime() : 9999999999999));
+                const minDateB = Math.min(...b[1].map(c => c.event_date ? new Date(c.event_date).getTime() : 9999999999999));
+                return minDateA - minDateB;
+            });
+            grid.innerHTML = sortedArtistEntries.map(([artist, list]) => {
+                list.sort((a, b) => (a.event_date ? new Date(a.event_date).getTime() : 9999999999999) - (b.event_date ? new Date(b.event_date).getTime() : 9999999999999));
                 const bgImg = list[0].artist_image || getExactArtistPhoto(artist);
                 if (list.length === 1) {
                     const c = list[0];

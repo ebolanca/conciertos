@@ -75,6 +75,9 @@ def get_stats():
         with open("data/concerts.json", "r", encoding="utf-8") as f:
             concerts_data = json.load(f)
 
+    concerts_list = concerts_data.get("concerts", [])
+    concerts_list.sort(key=lambda c: c.get("event_date") or "9999-12-31")
+
     return {
         "total_files_scanned": artists_data.get("total_files_scanned", 0),
         "qualified_artists_count": artists_data.get("qualified_artists_count", 0),
@@ -83,7 +86,7 @@ def get_stats():
         "pending_sale_count": concerts_data.get("pending_sale_count", 0),
         "on_sale_count": concerts_data.get("on_sale_count", 0),
         "bought_count": concerts_data.get("bought_count", 0),
-        "concerts": concerts_data.get("concerts", [])
+        "concerts": concerts_list
     }
 
 @app.post("/api/scan")
