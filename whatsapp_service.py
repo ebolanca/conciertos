@@ -7,6 +7,8 @@ import requests
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+APP_URL = "http://100.95.217.45:8086"
+
 class WhatsAppService:
     def __init__(self, config_path="config.yaml"):
         if not Path(config_path).exists() and Path("/app/config.yaml").exists():
@@ -60,9 +62,10 @@ class WhatsAppService:
         
         res = False
         if self.provider == "meta" and self.meta_access_token and self.meta_phone_number_id:
-            res = self._send_meta_template("concierto_aviso", message)
+            # First try free-form text message so formatting with newlines is preserved perfectly
+            res = self._send_meta_text(message)
             if not res:
-                res = self._send_meta_template("hello_world", message)
+                res = self._send_meta_template("concierto_aviso", message)
         else:
             res = self._send_http_gateway(message)
         
@@ -70,16 +73,35 @@ class WhatsAppService:
             self._log_sent_message(message, self.phone_number)
         return res
 
+    def _send_meta_text(self, message: str) -> bool:
+        url = f"https://graph.facebook.com/{self.meta_api_version}/{self.meta_phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {self.meta_access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": self.phone_number,
+            "type": "text",
+            "text": { "preview_url": True, "body": message }
+        }
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=10)
+            if resp.status_code in (200, 201):
+                logger.info(f"✓ Texto Meta entregado a +{self.phone_number}")
+                return True
+        except Exception as e:
+            logger.error(f"Excepción Meta Text API: {e}")
+        return False
+
     def _send_meta_template(self, template_name: str, message_param: str) -> bool:
         url = f"https://graph.facebook.com/{self.meta_api_version}/{self.meta_phone_number_id}/messages"
         headers = {
             "Authorization": f"Bearer {self.meta_access_token}",
             "Content-Type": "application/json"
         }
-        
-        # Clean message parameter for Meta template (max 1024 chars, no newlines inside variable)
         param_clean = message_param.replace("\n", " • ")[:1000]
-        
         payload = {
             "messaging_product": "whatsapp",
             "to": self.phone_number,
@@ -89,7 +111,6 @@ class WhatsAppService:
                 "language": { "code": "es" if template_name == "concierto_aviso" else "en_US" }
             }
         }
-        
         if template_name == "concierto_aviso":
             payload["template"]["components"] = [
                 {
@@ -97,18 +118,11 @@ class WhatsAppService:
                     "parameters": [{ "type": "text", "text": param_clean }]
                 }
             ]
-            
         try:
-            logger.info(f"Enviando Plantilla Meta '{template_name}' a +{self.phone_number}...")
             resp = requests.post(url, json=payload, headers=headers, timeout=10)
-            if resp.status_code in (200, 201):
-                logger.info(f"✓ Plantilla Meta entregada con éxito a +{self.phone_number}")
-                return True
-            else:
-                logger.error(f"Error Meta Cloud API (Status {resp.status_code}): {resp.text}")
-        except Exception as e:
-            logger.error(f"Excepción conectando con Meta Cloud API: {e}")
-        return False
+            return resp.status_code in (200, 201)
+        except Exception:
+            return False
 
     def _send_http_gateway(self, message: str) -> bool:
         api_url = self.config.get("whatsapp", {}).get("api_url", "http://100.95.217.45:8080/send-message")
@@ -120,19 +134,51 @@ class WhatsAppService:
             return False
 
     def send_announcement_notification(self, concert: dict) -> bool:
-        msg = f"📢 ¡NUEVO CONCIERTO ANUNCIADO EN MADRID! Artista: {concert.get('artist', 'Artista')} | Lugar: {concert.get('venue', 'Madrid')} | Fecha Concierto: {concert.get('event_date', 'Por determinar')} | Salida a Venta: {concert.get('ticket_sale_date', 'Por determinar')} | Enlace: {concert.get('ticket_url', '')}"
+        date_fmt = concert.get("event_date", "Por determinar").replace("T", " ")
+        sale_fmt = concert.get("ticket_sale_date", "Por determinar").replace("T", " ")
+        msg = (
+            f"📢 ¡NUEVO CONCIERTO ANUNCIADO EN MADRID!\n\n"
+            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
+            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
+            f"📅 Fecha Concierto: {date_fmt}\n"
+            f"🎟️ Salida a la Venta: {sale_fmt}\n"
+            f"🛒 Comprar en: {concert.get('ticket_url', '')}\n\n"
+            f"📱 Abre tu app de conciertos para guardar en tu calendario:\n{APP_URL}"
+        )
         return self._send(msg)
 
     def send_interested_sale_reminder(self, concert: dict) -> bool:
-        msg = f"⭐ ¡INTERÉS REGISTRADO! Se ha guardado la SALIDA A LA VENTA para {concert.get('artist', 'Artista')} el {concert.get('ticket_sale_date', 'Por determinar')} en {concert.get('venue', 'Madrid')}. Avisos 1 día antes y 10 min antes. Comprar: {concert.get('ticket_url', '')}"
+        sale_fmt = concert.get("ticket_sale_date", "Por determinar").replace("T", " ")
+        msg = (
+            f"⭐ ¡INTERÉS REGISTRADO!\n\n"
+            f"Se ha preparado la SALIDA A LA VENTA de entradas:\n"
+            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
+            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
+            f"🎟️ Salida a la Venta: {sale_fmt}\n\n"
+            f"⏰ Avisos programados: 1 día antes y 10 minutos antes.\n"
+            f"🛒 Enlace de compra: {concert.get('ticket_url', '')}\n\n"
+            f"📱 Abre tu app de conciertos:\n{APP_URL}"
+        )
         return self._send(msg)
 
     def send_bought_concert_reminder(self, concert: dict) -> bool:
-        msg = f"🎟️ ¡ENTRADA CONFIRMADA! Concierto de {concert.get('artist', 'Artista')} en {concert.get('venue', 'Madrid')} el {concert.get('event_date', 'Por determinar')}. Avisos 3 días antes, 1 día antes y 3 horas antes."
+        date_fmt = concert.get("event_date", "Por determinar").replace("T", " ")
+        pdf_info = "📄 Entrada PDF adjunta en tu app." if concert.get('ticket_pdf') else ""
+        msg = (
+            f"🎟️ ¡ENTRADA CONFIRMADA Y PROCESADA!\n\n"
+            f"Cita para el DÍA DEL CONCIERTO preparada:\n"
+            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
+            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
+            f"📅 Fecha Concierto: {date_fmt}\n"
+            f"{pdf_info}\n\n"
+            f"⏰ Avisos programados: 3 días antes, 1 día antes y 3 horas antes.\n\n"
+            f"📱 Abre tu app de conciertos:\n{APP_URL}"
+        )
         return self._send(msg)
 
     def send_notification(self, concert: dict) -> bool:
         return self.send_announcement_notification(concert)
 
     def send_test_message(self) -> bool:
-        return self._send("🧪 Mensaje de prueba desde Madrid Concert Notifier - Servicio Meta Cloud API activo 🎟️")
+        msg = f"🧪 Mensaje de prueba desde Madrid Concert Notifier - Servicio WhatsApp activo 🎟️\n\n📱 Abre tu app de conciertos:\n{APP_URL}"
+        return self._send(msg)
