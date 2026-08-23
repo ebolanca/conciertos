@@ -45,7 +45,7 @@
         .stat-card .value { font-size: 2rem; font-weight: 700; color: white; }
         .section-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
-        .concert-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.4rem; backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; height: 440px; max-height: 440px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .concert-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.4rem; backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; height: 460px; max-height: 460px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         .concert-card:hover { border-color: rgba(99, 102, 241, 0.5); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
         .card-bg-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center top; opacity: 0.12; filter: grayscale(15%) contrast(1.1); z-index: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.4s ease; }
         .concert-card:hover .card-bg-overlay { opacity: 0.22; transform: scale(1.04); }
@@ -143,7 +143,9 @@
             "pitbull": "/artist_images/pitbull.jpg",
             "la oreja de van gogh": "/artist_images/la_oreja_de_van_gogh.jpg",
             "evanescence": "/artist_images/evanescence.jpg",
-            "bryan adams": "/artist_images/bryan_adams.jpg"
+            "bryan adams": "/artist_images/bryan_adams.jpg",
+            "ac/dc": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop",
+            "acdc": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1000&auto=format&fit=crop"
         };
         function getExactArtistPhoto(artistName) {
             if (!artistName) return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
@@ -159,6 +161,13 @@
                 if (isNaN(dt.getTime())) return isoStr;
                 return dt.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) + (isoStr.includes("T") ? " " + dt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "");
             } catch { return isoStr; }
+        }
+        function buildGcalUrl(artist, venue, dateIso, type) {
+            const title = encodeURIComponent((type === "SALE" ? "🎟️ [SALIDA ENTRADAS] " : "Concierto ") + artist + " - Madrid");
+            const dtStr = (dateIso || "20261023T210000").replace(/[-:]/g, "").replace(/\.\d+/, "");
+            const dates = dtStr.substring(0, 15) + "Z/" + dtStr.substring(0, 15) + "Z";
+            const loc = encodeURIComponent(venue || "Madrid");
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&location=${loc}`;
         }
         function hashCode(str) {
             let hash = 0;
@@ -216,7 +225,7 @@
                 const res = await fetch("/api/express_interest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ concert_id: concertId }) });
                 const data = await res.json();
                 if (data.status === "ok") {
-                    alert("⭐ Interés registrado. Se ha guardado el evento de SALIDA A LA VENTA en tu Google Calendar y enviado aviso por WhatsApp.");
+                    alert("⭐ Interés registrado. Se ha enviado aviso por WhatsApp. Haz clic en '📅 Google Calendar' para guardar la cita en 1 segundo.");
                     loadData();
                 } else { alert("Error: " + (data.message || "Error desconocido")); }
             } catch (err) { alert("Error al registrar interés."); }
@@ -241,7 +250,7 @@
                 const res = await fetch("/api/upload_ticket", { method: "POST", body: formData });
                 const data = await res.json();
                 if (data.status === "ok") {
-                    alert("¡Entrada PDF subida correctamente! Se ha programado el evento del DÍA DEL CONCIERTO en Google Calendar y notificado en WhatsApp.");
+                    alert("¡Entrada PDF subida correctamente!");
                     loadData();
                 } else { alert("Error subiendo PDF: " + (data.message || "Error desconocido")); }
             } catch (err) { alert("Error de conexión al subir la entrada."); }
@@ -275,6 +284,9 @@
                     else if (c.status === "INTERESADO") { badgeClass = "badge-amber"; statusText = "⭐ Interesado"; cardClass = "interesado"; }
                     else if (c.status === "COMPRADO") { badgeClass = "badge-green"; statusText = "Entradas Compradas 🎟️"; cardClass = "comprado"; }
                     
+                    const gcalUrl = c.gcal_link || buildGcalUrl(c.artist, c.venue, c.ticket_sale_date || c.event_date, "SALE");
+                    const gcalBtn = `<a href="${gcalUrl}" target="_blank" class="btn btn-outline" title="Añadir evento a Google Calendar">📅 Calendar</a>`;
+                    
                     let actionButtonsHtml = "";
                     if (c.status === "COMPRADO") {
                         const pdfViewBtn = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline">📄 Ver PDF</a>` : "";
@@ -291,7 +303,7 @@
                     }
                     const mapBtn = `<button onclick="openVenueModal('${c.venue || "Madrid"}')" class="btn btn-outline" title="Cómo llegar en Metro y transporte">📍 Llegar</button>`;
                     const setlistBtn = `<button onclick="openSetlistModal('${c.artist}')" class="btn btn-outline" title="Ver canciones de la gira">🎼 Setlist</button>`;
-                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div><div><span class="key">💰 Precios:</span> <span class="val" style="color:#fbbf24;">${c.price_range || "35€ - 90€"}</span></div></div></div><div class="card-actions">${actionButtonsHtml}${mapBtn}${setlistBtn}</div></div></div>`;
+                    return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div><span class="badge ${badgeClass}">${statusText}</span><div class="artist-name">${c.artist}</div><div class="venue-info">📍 ${c.venue || "Madrid"}</div><div class="details-list"><div><span class="key">Fecha Concierto:</span> <span class="val">${formatDate(c.event_date)}</span></div><div><span class="key">Salida a Venta:</span> <span class="val">${formatDate(c.ticket_sale_date)}</span></div><div><span class="key">💰 Precios:</span> <span class="val" style="color:#fbbf24;">${c.price_range || "35€ - 90€"}</span></div></div></div><div class="card-actions">${actionButtonsHtml}${gcalBtn}${mapBtn}${setlistBtn}</div></div></div>`;
                 } else {
                     const cardId = "card-" + hashCode(artist);
                     const venues = [...new Set(list.map(c => c.venue))].join(", ");
@@ -300,6 +312,8 @@
                     if (boughtCount > 0) cardClass += " comprado";
                     const subItems = list.map(c => {
                         let subBadge = c.status === "COMPRADO" ? '<span class="badge badge-green">✓ Entrada Comprada</span>' : (c.status === "INTERESADO" ? '<span class="badge badge-amber">⭐ Interesado</span>' : '<span class="badge badge-purple">Anunciado</span>');
+                        const gcalUrlSub = c.gcal_link || buildGcalUrl(c.artist, c.venue, c.ticket_sale_date || c.event_date, "SALE");
+                        const gcalBtnSub = `<a href="${gcalUrlSub}" target="_blank" class="btn btn-outline btn-sm">📅 Calendar</a>`;
                         let subActionsHtml = "";
                         if (c.status === "COMPRADO") {
                             const pdfViewBtnSub = c.ticket_pdf ? `<a href="${c.ticket_pdf}" target="_blank" class="btn btn-outline btn-sm">📄 Ver PDF</a>` : "";
@@ -315,7 +329,7 @@
                             subActionsHtml = `${interestBtnSub}${buyUrlBtnSub}${buyMarkBtnSub}`;
                         }
                         const mapBtnSub = `<button onclick="openVenueModal('${c.venue || "Madrid"}')" class="btn btn-outline btn-sm" title="Cómo llegar">📍 Llegar</button>`;
-                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"} • 💰 ${c.price_range || "35€ - 90€"}</div><div class="sub-actions">${subActionsHtml}${mapBtnSub}</div></div>`;
+                        return `<div class="sub-concert-item"><div class="sub-concert-header"><div class="sub-date">📅 ${formatDate(c.event_date)}</div>${subBadge}</div><div class="sub-venue">📍 ${c.venue || "Madrid"} • 💰 ${c.price_range || "35€ - 90€"}</div><div class="sub-actions">${subActionsHtml}${gcalBtnSub}${mapBtnSub}</div></div>`;
                     }).join("");
                     const setlistBtnGroup = `<button onclick="openSetlistModal('${artist}')" class="btn btn-outline btn-sm" style="margin-top:0.4rem; width:100%; justify-content:center;">🎼 Ver Setlist de la Gira</button>`;
                     return `<div class="concert-card ${cardClass}"><div class="card-bg-overlay" style="background-image: url('${bgImg}');"></div><div class="card-content"><div class="card-header-clickable" onclick="toggleGroup('${cardId}')"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;"><span class="badge badge-amber">Varias fechas (${list.length})</span><span class="toggle-btn-badge" id="toggle-badge-${cardId}">▼ Ver fechas</span></div><div class="artist-name">${artist}</div><div class="venue-info">📍 ${venues}</div><div class="details-list"><div><span class="key">Conciertos programados:</span> <span class="val">${list.length} fechas en Madrid</span></div><div><span class="key">💰 Precios:</span> <span class="val" style="color:#fbbf24;">${list[0].price_range || "35€ - 90€"}</span></div></div></div><div class="collapsible-dates" id="collapsible-${cardId}" style="display: none;">${subItems}${setlistBtnGroup}</div></div></div>`;
@@ -330,7 +344,7 @@
         }
         async function triggerScan() { alert("Iniciando escaneo de biblioteca y búsqueda de conciertos..."); await fetch("/api/scan", { method: "POST" }); loadData(); }
         async function testWhatsApp() { const res = await fetch("/api/test_whatsapp", { method: "POST" }); const data = await res.json(); alert(data.message || "Prueba enviada a WhatsApp"); }
-        async function markBought(concertId) { await fetch("/api/buy_ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ concert_id: concertId }) }); alert("¡Genial! Se ha programado el evento del DÍA DEL CONCIERTO en tu Google Calendar y notificado en WhatsApp."); loadData(); }
+        async function markBought(concertId) { await fetch("/api/buy_ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ concert_id: concertId }) }); alert("¡Genial! Se ha enviado confirmación por WhatsApp."); loadData(); }
         document.addEventListener("DOMContentLoaded", loadData);
     </script>
 </body>
