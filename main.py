@@ -219,6 +219,17 @@ async def upload_ticket(concert_id: str = Form(...), file: UploadFile = File(...
             
     return {"status": "error", "message": "Concierto no encontrado."}
 
+@app.get("/api/start_dashboard")
+def start_dashboard():
+    import subprocess
+    try:
+        subprocess.run(["cmd.exe", "/c", "git config --global --add safe.directory *"], cwd="D:/03_Trabajo/Dashboard_Global")
+        subprocess.run(["cmd.exe", "/c", "pm2 start server.js --name dashboard-global"], cwd="D:/03_Trabajo/Dashboard_Global")
+        subprocess.run(["cmd.exe", "/c", "pm2 restart dashboard-global"], cwd="D:/03_Trabajo/Dashboard_Global")
+        return {"status": "ok", "message": "Dashboard Global iniciado en OMEN"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8086, reload=True)
@@ -358,3 +369,4 @@ def get_artist_setlist(artist_name: str):
         f"5. Cierre de Concierto - {artist_name}"
     ]
     return {"status": "ok", "artist": artist_name, "songs": fallback_songs}
+
