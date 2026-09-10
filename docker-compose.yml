@@ -17,9 +17,11 @@ services:
       - ./concert_finder.py:/app/concert_finder.py
       - ./main.py:/app/main.py
       - ./artist_scanner.py:/app/artist_scanner.py
+      - ./whatsapp_service.py:/app/whatsapp_service.py
+      - ./gcalendar_service.py:/app/gcalendar_service.py
       
-      # Montaje de la carpeta de música de tu servidor OMEN
+      # Montaje de la carpeta de musica de tu servidor OMEN
       - "D:/media-library/music:/media:ro"
 
-      # Montaje del caché sincronizado de Spotify (spotdl-sync)
+      # Montaje del cache sincronizado de Spotify (spotdl-sync)
       - "D:/Docker/media-server/spotdl-sync/cache:/app/spotdl_cache:ro"
