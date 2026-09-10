@@ -70,10 +70,12 @@ class WhatsAppService:
         
         res = False
         if self.provider == "meta" and self.meta_access_token and self.meta_phone_number_id:
-            # First try free-form text message so formatting with newlines is preserved perfectly
-            res = self._send_meta_text(message)
+            # Enviar prioritariamente con la plantilla oficial aprobada 'concierto_aviso'
+            # para garantizar entrega instantánea 24/7 sin importar la ventana de atención
+            res = self._send_meta_template("concierto_aviso", message)
             if not res:
-                res = self._send_meta_template("concierto_aviso", message)
+                # Fallback a texto plano si falla la plantilla
+                res = self._send_meta_text(message)
         else:
             res = self._send_http_gateway(message)
         
@@ -99,6 +101,8 @@ class WhatsAppService:
             if resp.status_code in (200, 201):
                 logger.info(f"✓ Texto Meta entregado a +{self.phone_number}")
                 return True
+            else:
+                logger.error(f"Error texto Meta: {resp.status_code} - {resp.text}")
         except Exception as e:
             logger.error(f"Excepción Meta Text API: {e}")
         return False
@@ -109,7 +113,11 @@ class WhatsAppService:
             "Authorization": f"Bearer {self.meta_access_token}",
             "Content-Type": "application/json"
         }
-        param_clean = message_param.replace("\n", " • ")[:1000]
+        # Limpiar saltos de línea para el parámetro {{1}} de la plantilla oficial de Meta
+        param_clean = message_param.replace("\r\n", " | ").replace("\n", " | ").strip()
+        if len(param_clean) > 950:
+            param_clean = param_clean[:947] + "..."
+            
         payload = {
             "messaging_product": "whatsapp",
             "to": self.phone_number,
@@ -128,8 +136,14 @@ class WhatsAppService:
             ]
         try:
             resp = requests.post(url, json=payload, headers=headers, timeout=10)
-            return resp.status_code in (200, 201)
-        except Exception:
+            if resp.status_code in (200, 201):
+                logger.info(f"✓ Plantilla Meta '{template_name}' entregada con éxito a +{self.phone_number}")
+                return True
+            else:
+                logger.error(f"Error plantilla Meta '{template_name}': {resp.status_code} - {resp.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Excepción Meta Template API: {e}")
             return False
 
     def _send_http_gateway(self, message: str) -> bool:
@@ -142,53 +156,32 @@ class WhatsAppService:
             return False
 
     def send_announcement_notification(self, concert: dict) -> bool:
+        artist = concert.get("artist", "Artista")
+        venue = concert.get("venue", "Madrid")
         date_fmt = concert.get("event_date", "Por determinar").replace("T", " ")
         sale_fmt = concert.get("ticket_sale_date", "Por determinar").replace("T", " ")
-        msg = (
-            f"📢 ¡NUEVO CONCIERTO ANUNCIADO EN MADRID!\n\n"
-            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
-            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
-            f"📅 Fecha Concierto: {date_fmt}\n"
-            f"🎟️ Salida a la Venta: {sale_fmt}\n"
-            f"🛒 Comprar en: {concert.get('ticket_url', '')}\n\n"
-            f"📱 Abre tu app de conciertos para guardar en tu calendario:\n{APP_URL}"
-        )
+        msg = f"Nuevo concierto anunciado de {artist} en {venue} ({date_fmt}). Salida a la venta: {sale_fmt}."
         return self._send(msg)
 
     def send_interested_sale_reminder(self, concert: dict) -> bool:
+        artist = concert.get("artist", "Artista")
+        venue = concert.get("venue", "Madrid")
         sale_fmt = concert.get("ticket_sale_date", "Por determinar").replace("T", " ")
-        msg = (
-            f"⭐ ¡INTERÉS REGISTRADO!\n\n"
-            f"Se ha preparado la SALIDA A LA VENTA de entradas:\n"
-            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
-            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
-            f"🎟️ Salida a la Venta: {sale_fmt}\n\n"
-            f"⏰ Avisos programados: 1 día antes y 10 minutos antes.\n"
-            f"🛒 Enlace de compra: {concert.get('ticket_url', '')}\n\n"
-            f"📱 Abre tu app de conciertos:\n{APP_URL}"
-        )
+        msg = f"Salida a la venta preparada para {artist} en {venue}. Salida: {sale_fmt}."
         return self._send(msg)
 
     def send_bought_concert_reminder(self, concert: dict) -> bool:
+        artist = concert.get("artist", "Artista")
+        venue = concert.get("venue", "Madrid")
         date_fmt = concert.get("event_date", "Por determinar").replace("T", " ")
-        pdf_info = "📄 Entrada PDF adjunta en tu app." if concert.get('ticket_pdf') else ""
-        msg = (
-            f"🎟️ ¡ENTRADA CONFIRMADA Y PROCESADA!\n\n"
-            f"Cita para el DÍA DEL CONCIERTO preparada:\n"
-            f"🎤 Artista: {concert.get('artist', 'Artista')}\n"
-            f"📍 Lugar: {concert.get('venue', 'Madrid')}\n"
-            f"📅 Fecha Concierto: {date_fmt}\n"
-            f"{pdf_info}\n\n"
-            f"⏰ Avisos programados: 3 días antes, 1 día antes y 3 horas antes.\n\n"
-            f"📱 Abre tu app de conciertos:\n{APP_URL}"
-        )
+        msg = f"Recordatorio: Concierto de {artist} en {venue} el {date_fmt}. ¡Entrada lista en la app!"
         return self._send(msg)
 
     def send_notification(self, concert: dict) -> bool:
         return self.send_announcement_notification(concert)
 
     def send_test_message(self) -> bool:
-        msg = f"🧪 Mensaje de prueba desde Madrid Concert Notifier - Servicio WhatsApp activo 🎟️\n\n📱 Abre tu app de conciertos:\n{APP_URL}"
+        msg = "Mensaje de prueba verificado con éxito desde Madrid Concert Notifier"
         return self._send(msg)
 
 
