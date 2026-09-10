@@ -118,7 +118,14 @@
             <div class="stat-card"><div class="label">Conciertos en Madrid</div><div class="value" id="stat-concerts">0</div></div>
             <div class="stat-card"><div class="label">Pendientes de Entradas</div><div class="value" id="stat-pending">0</div></div>
         </div>
-        <h2 class="section-title">🎟️ Próximos Conciertos en Madrid</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h2 class="section-title" style="margin-bottom: 0;">🎟️ Próximos Conciertos en Madrid</h2>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="btn-toggle-past" class="btn btn-outline btn-sm" onclick="togglePastConcerts()" title="Mostrar u ocultar conciertos cuya fecha ya ha pasado">
+                    🕒 Ver pasados (<span id="count-past">0</span>)
+                </button>
+            </div>
+        </div>
         <div class="cards-grid" id="concerts-grid"><p style="color: var(--text-muted);">Cargando conciertos...</p></div>
         <h2 class="section-title">🎤 Artistas Cualificados (Biblioteca Servidor)</h2>
         <div class="table-container">
@@ -154,12 +161,24 @@
             for (const k in ARTIST_EXACT_PHOTOS) { if (key.includes(k)) return ARTIST_EXACT_PHOTOS[k]; }
             return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop";
         }
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            if (dateStr.includes("/")) {
+                const parts = dateStr.split(" ")[0].split("/");
+                if (parts.length === 3) {
+                    const timePart = dateStr.split(" ")[1] || "00:00:00";
+                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T${timePart}`);
+                }
+            }
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
+        }
         function formatDate(isoStr) {
             if (!isoStr) return "Por determinar";
             try {
-                const dt = new Date(isoStr);
-                if (isNaN(dt.getTime())) return isoStr;
-                return dt.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) + (isoStr.includes("T") ? " " + dt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "");
+                const dt = parseDate(isoStr);
+                if (!dt || isNaN(dt.getTime())) return isoStr;
+                return dt.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) + (isoStr.includes("T") || isoStr.includes(" ") ? " " + dt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "");
             } catch { return isoStr; }
         }
         function buildGcalUrl(artist, venue, dateIso, type) {
@@ -200,6 +219,28 @@
                 }
             } catch { document.getElementById("venue-details-container").innerHTML = "<p style='color:var(--text-muted)'>Error al cargar transporte.</p>"; }
         }
+        let showPastConcerts = false;
+        let cachedActiveConcerts = [];
+        let cachedPastConcerts = [];
+
+        function togglePastConcerts() {
+            showPastConcerts = !showPastConcerts;
+            const btn = document.getElementById("btn-toggle-past");
+            if (btn) {
+                if (showPastConcerts) {
+                    btn.classList.add("btn-amber");
+                    btn.classList.remove("btn-outline");
+                    btn.innerHTML = `👁️ Ocultar pasados (${cachedPastConcerts.length})`;
+                } else {
+                    btn.classList.remove("btn-amber");
+                    btn.classList.add("btn-outline");
+                    btn.innerHTML = `🕒 Ver pasados (<span id="count-past">${cachedPastConcerts.length}</span>)`;
+                }
+            }
+            const displayed = showPastConcerts ? [...cachedActiveConcerts, ...cachedPastConcerts] : cachedActiveConcerts;
+            renderConcerts(displayed);
+        }
+
         async function loadData() {
             try {
                 const res = await fetch("/api/stats");
@@ -208,7 +249,15 @@
                 document.getElementById("stat-artists").innerText = data.qualified_artists_count || 0;
                 document.getElementById("stat-concerts").innerText = data.total_concerts_found || 0;
                 document.getElementById("stat-pending").innerText = data.pending_sale_count || 0;
-                renderConcerts(data.concerts || []);
+                
+                cachedActiveConcerts = data.concerts || [];
+                cachedPastConcerts = data.past_concerts || [];
+                
+                const countPastEl = document.getElementById("count-past");
+                if (countPastEl) countPastEl.innerText = cachedPastConcerts.length;
+
+                const displayed = showPastConcerts ? [...cachedActiveConcerts, ...cachedPastConcerts] : cachedActiveConcerts;
+                renderConcerts(displayed);
                 renderArtists(data.qualified_artists || {});
             } catch (err) { console.error("Error cargando datos:", err); }
         }
@@ -268,12 +317,12 @@
                 grouped[key].push(c);
             });
             const sortedArtistEntries = Object.entries(grouped).sort((a, b) => {
-                const minDateA = Math.min(...a[1].map(c => c.event_date ? new Date(c.event_date).getTime() : 9999999999999));
-                const minDateB = Math.min(...b[1].map(c => c.event_date ? new Date(c.event_date).getTime() : 9999999999999));
+                const minDateA = Math.min(...a[1].map(c => { const d = parseDate(c.event_date); return d ? d.getTime() : 9999999999999; }));
+                const minDateB = Math.min(...b[1].map(c => { const d = parseDate(c.event_date); return d ? d.getTime() : 9999999999999; }));
                 return minDateA - minDateB;
             });
             grid.innerHTML = sortedArtistEntries.map(([artist, list]) => {
-                list.sort((a, b) => (a.event_date ? new Date(a.event_date).getTime() : 9999999999999) - (b.event_date ? new Date(b.event_date).getTime() : 9999999999999));
+                list.sort((a, b) => { const da = parseDate(a.event_date); const db = parseDate(b.event_date); return (da ? da.getTime() : 9999999999999) - (db ? db.getTime() : 9999999999999); });
                 const bgImg = list[0].artist_image || getExactArtistPhoto(artist);
                 if (list.length === 1) {
                     const c = list[0];

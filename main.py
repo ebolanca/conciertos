@@ -195,6 +195,31 @@ class WhatsAppService:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+def parse_event_datetime(date_str: str):
+    if not date_str:
+        return None
+    date_str = str(date_str).strip()
+    if "/" in date_str:
+        try:
+            parts = date_str.split(" ")[0].split("/")
+            if len(parts) == 3:
+                d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+                h, mi, s = 0, 0, 0
+                if " " in date_str:
+                    time_parts = date_str.split(" ")[1].split(":")
+                    h = int(time_parts[0]) if len(time_parts) > 0 else 0
+                    mi = int(time_parts[1]) if len(time_parts) > 1 else 0
+                    s = int(time_parts[2]) if len(time_parts) > 2 else 0
+                return datetime(y, m, d, h, mi, s)
+        except Exception:
+            pass
+    try:
+        clean_iso = date_str.replace("Z", "").split("+")[0]
+        return datetime.fromisoformat(clean_iso)
+    except Exception:
+        pass
+    return None
+
 app = FastAPI(title="Madrid Concert Notifier")
 
 templates = Jinja2Templates(directory="templates")
@@ -223,7 +248,11 @@ def run_full_scan_task():
     concert_result = finder.search_concerts()
     
     concerts = concert_result.get("concerts", [])
+    today_now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     for concert in concerts:
+        c_dt = parse_event_datetime(concert.get("event_date"))
+        if c_dt and c_dt < today_now:
+            continue
         if concert.get("status") in ("PENDIENTE_VENTA", "ENTRADAS_A_LA_VENTA") and not concert.get("notified"):
             sent = whatsapp.send_announcement_notification(concert)
             if sent:
@@ -246,7 +275,7 @@ def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/api/stats")
-def get_stats():
+def get_stats(include_past: bool = False):
     artists_data = {}
     if Path("data/artists.json").exists():
         with open("data/artists.json", "r", encoding="utf-8") as f:
@@ -257,18 +286,44 @@ def get_stats():
         with open("data/concerts.json", "r", encoding="utf-8") as f:
             concerts_data = json.load(f)
 
-    concerts_list = concerts_data.get("concerts", [])
-    concerts_list.sort(key=lambda c: c.get("event_date") or "9999-12-31")
+    raw_concerts = concerts_data.get("concerts", [])
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    active_concerts = []
+    past_concerts = []
+
+    for c in raw_concerts:
+        dt = parse_event_datetime(c.get("event_date"))
+        if dt:
+            c["event_date"] = dt.isoformat()
+            if dt < today_start:
+                c["is_past"] = True
+                past_concerts.append(c)
+            else:
+                c["is_past"] = False
+                active_concerts.append(c)
+        else:
+            c["is_past"] = False
+            active_concerts.append(c)
+
+    # Ordenar activos cronológicamente (los más próximos primero)
+    active_concerts.sort(key=lambda c: parse_event_datetime(c.get("event_date")) or datetime.max)
+    # Ordenar pasados inversamente (los más recientes primero)
+    past_concerts.sort(key=lambda c: parse_event_datetime(c.get("event_date")) or datetime.min, reverse=True)
+
+    displayed_concerts = (active_concerts + past_concerts) if include_past else active_concerts
 
     return {
         "total_files_scanned": artists_data.get("total_files_scanned", 0),
         "qualified_artists_count": artists_data.get("qualified_artists_count", 0),
         "qualified_artists": artists_data.get("qualified_artists", {}),
-        "total_concerts_found": concerts_data.get("total_concerts_found", 0),
-        "pending_sale_count": concerts_data.get("pending_sale_count", 0),
-        "on_sale_count": concerts_data.get("on_sale_count", 0),
-        "bought_count": concerts_data.get("bought_count", 0),
-        "concerts": concerts_list
+        "total_concerts_found": len(active_concerts),
+        "pending_sale_count": sum(1 for c in active_concerts if c.get("status") == "PENDIENTE_VENTA"),
+        "on_sale_count": sum(1 for c in active_concerts if c.get("status") in ("ENTRADAS_A_LA_VENTA", "INTERESADO")),
+        "bought_count": sum(1 for c in active_concerts if c.get("status") == "COMPRADO"),
+        "past_count": len(past_concerts),
+        "concerts": displayed_concerts,
+        "past_concerts": past_concerts
     }
 
 @app.post("/api/scan")
