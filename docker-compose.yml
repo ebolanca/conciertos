@@ -16,7 +16,10 @@ services:
       - ./templates:/app/templates
       - ./concert_finder.py:/app/concert_finder.py
       - ./main.py:/app/main.py
+      - ./artist_scanner.py:/app/artist_scanner.py
       
       # Montaje de la carpeta de música de tu servidor OMEN
-      # Ajusta el origen si ejecutas docker directamente en OMEN
       - "D:/media-library/music:/media:ro"
+
+      # Montaje del caché sincronizado de Spotify (spotdl-sync)
+      - "D:/Docker/media-server/spotdl-sync/cache:/app/spotdl_cache:ro"

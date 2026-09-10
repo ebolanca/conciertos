@@ -8,23 +8,38 @@ concerts:
   target_country_code: ES
   ticketmaster_api_key: ''
 google_calendar:
-  alert_time: 09:00
+  alert_time: '09:00'
   calendar_id: primary
   enabled: true
   timezone: Europe/Madrid
 scanner:
+  # Listas de reproducción de Roberto a escanear (nuevas listas sustituyendo las antiguas)
+  target_playlists:
+    - "Música viejuna Roberto"
+    - "Siglo XXI Roberto"
+    - "Española"
+    - "Música latina"
+    - "Dance"
+  excluded_playlists:
+    - "Música viejuna"
+    - "Siglo XXI"
+  spotdl_cache_files:
+    - '/app/spotdl_cache/tracks_cache.json'
+    - 'D:/Docker/media-server/spotdl-sync/cache/tracks_cache.json'
+    - '//100.95.217.45/omen D/Docker/media-server/spotdl-sync/cache/tracks_cache.json'
+    - 'D:\\Docker\\media-server\\spotdl-sync\\cache\\tracks_cache.json'
   docker_music_folder: /media
   min_songs_threshold: 3
   music_folder:
-  - \\100.95.217.45\omen D\Docker\media-server
-  - \\100.95.217.45\omen D\media-library\music-videos
+    - 'D:/media-library/music'
+    - '//100.95.217.45/omen D/media-library/music'
   supported_extensions:
-  - .mp3
-  - .flac
-  - .m4a
-  - .ogg
-  - .wav
-  - .aac
+    - .mp3
+    - .flac
+    - .m4a
+    - .ogg
+    - .wav
+    - .aac
 whatsapp:
   enabled: true
   meta_access_token: EAAWWLRYCbxUBSAXlcJ47SWEoIVyu5SXHM9sZCbLZBNYOwRI5AEZAgQvK4NZAYMOThEZCnoZC1VfpGBfybZB22QTKKhApCilmzqZAHhVMIedRWY12uUcJwP0ajujMGCtZAwmZCuUoIpmCZBuX5xqJl1XTNIXqFDCvtGWNIqPu9E3oBmX6uJnnA9MmM2ZAX7t8Nky7Nhxx0AZDZD
