@@ -163,6 +163,34 @@ class WhatsAppService:
         msg = f"Nuevo concierto anunciado de {artist} en {venue} ({date_fmt}). Salida a la venta: {sale_fmt}."
         return self._send(msg)
 
+    def send_announcements_batch(self, concerts: list) -> bool:
+        if not concerts:
+            return False
+        if len(concerts) == 1:
+            return self.send_announcement_notification(concerts[0])
+
+        artist = concerts[0].get("artist", "Artista")
+
+        def get_dt_key(c):
+            return str(c.get("event_date", "")).replace("T", " ")
+
+        sorted_concerts = sorted(concerts, key=get_dt_key)
+
+        venues = list(dict.fromkeys(c.get("venue", "Madrid") for c in sorted_concerts if c.get("venue")))
+        venue_str = " / ".join(venues) if venues else "Madrid"
+
+        dates = [c.get("event_date", "Por determinar").replace("T", " ") for c in sorted_concerts]
+        if len(dates) == 2:
+            dates_str = f"{dates[0]} y {dates[1]}"
+        else:
+            dates_str = ", ".join(dates[:-1]) + f" y {dates[-1]}"
+
+        sales = list(dict.fromkeys(c.get("ticket_sale_date", "Por determinar").replace("T", " ") for c in sorted_concerts if c.get("ticket_sale_date")))
+        sale_fmt = ", ".join(sales) if sales else "Por determinar"
+
+        msg = f"Nuevos conciertos anunciados de {artist} en {venue_str} ({dates_str}). Salida a la venta: {sale_fmt}."
+        return self._send(msg)
+
     def send_interested_sale_reminder(self, concert: dict) -> bool:
         artist = concert.get("artist", "Artista")
         venue = concert.get("venue", "Madrid")
@@ -242,17 +270,25 @@ def run_full_scan_task():
     
     concerts = concert_result.get("concerts", [])
     today_now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Agrupar conciertos pendientes de notificación por artista
+    pending_by_artist = {}
     for concert in concerts:
         c_dt = parse_event_datetime(concert.get("event_date"))
         if c_dt and c_dt < today_now:
             continue
         if concert.get("status") in ("PENDIENTE_VENTA", "ENTRADAS_A_LA_VENTA") and not concert.get("notified"):
-            sent = whatsapp.send_announcement_notification(concert)
-            if sent:
-                concert["notified"] = True
-                logger.info(f"Aviso WhatsApp enviado correctamente para {concert.get('artist')}")
-            else:
-                logger.warning(f"No se pudo enviar WhatsApp para {concert.get('artist')}, reintentara en proximo escaneo.")
+            artist_key = (concert.get("artist") or "Desconocido").strip().lower()
+            pending_by_artist.setdefault(artist_key, []).append(concert)
+
+    for artist_key, c_list in pending_by_artist.items():
+        sent = whatsapp.send_announcements_batch(c_list)
+        if sent:
+            for c in c_list:
+                c["notified"] = True
+            logger.info(f"Aviso WhatsApp enviado correctamente para {c_list[0].get('artist')} ({len(c_list)} fecha(s))")
+        else:
+            logger.warning(f"No se pudo enviar WhatsApp para {c_list[0].get('artist')}, reintentara en proximo escaneo.")
 
     with open("data/concerts.json", "w", encoding="utf-8") as f:
         json.dump(concert_result, f, ensure_ascii=False, indent=2)

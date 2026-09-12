@@ -155,6 +155,34 @@ class WhatsAppService:
         msg = f"Nuevo concierto anunciado de {artist} en {venue} ({date_fmt}). Salida a la venta: {sale_fmt}."
         return self._send(msg)
 
+    def send_announcements_batch(self, concerts: list) -> bool:
+        if not concerts:
+            return False
+        if len(concerts) == 1:
+            return self.send_announcement_notification(concerts[0])
+
+        artist = concerts[0].get("artist", "Artista")
+
+        def get_dt_key(c):
+            return str(c.get("event_date", "")).replace("T", " ")
+
+        sorted_concerts = sorted(concerts, key=get_dt_key)
+
+        venues = list(dict.fromkeys(c.get("venue", "Madrid") for c in sorted_concerts if c.get("venue")))
+        venue_str = " / ".join(venues) if venues else "Madrid"
+
+        dates = [c.get("event_date", "Por determinar").replace("T", " ") for c in sorted_concerts]
+        if len(dates) == 2:
+            dates_str = f"{dates[0]} y {dates[1]}"
+        else:
+            dates_str = ", ".join(dates[:-1]) + f" y {dates[-1]}"
+
+        sales = list(dict.fromkeys(c.get("ticket_sale_date", "Por determinar").replace("T", " ") for c in sorted_concerts if c.get("ticket_sale_date")))
+        sale_fmt = ", ".join(sales) if sales else "Por determinar"
+
+        msg = f"Nuevos conciertos anunciados de {artist} en {venue_str} ({dates_str}). Salida a la venta: {sale_fmt}."
+        return self._send(msg)
+
     def send_interested_sale_reminder(self, concert: dict) -> bool:
         artist = concert.get("artist", "Artista")
         venue = concert.get("venue", "Madrid")
