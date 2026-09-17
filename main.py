@@ -264,7 +264,6 @@ class ConcertActionRequest(BaseModel):
     concert_id: str
 
 def run_full_scan_task():
-    logger.info("--- Ejecutando tarea programada: Escaneo de biblioteca y búsqueda de conciertos ---")
     scanner_result = scanner.scan()
     concert_result = finder.search_concerts()
     
