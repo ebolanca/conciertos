@@ -131,12 +131,9 @@ class GoogleCalendarService:
         sale_date_iso, end_sale_iso = self.parse_event_start_end(concert.get("ticket_sale_date", concert.get("event_date", "")))
         summary = f"🎟️ [SALIDA ENTRADAS] {concert['artist']} - Madrid"
         description = (
-            f"¡Hoy salen a la venta las entradas para {concert['artist']}!
-"
-            f"Lugar: {concert.get('venue', 'Madrid')}
-"
-            f"Fecha del concierto: {concert.get('event_date', '')}
-"
+            f"¡Hoy salen a la venta las entradas para {concert['artist']}!\n"
+            f"Lugar: {concert.get('venue', 'Madrid')}\n"
+            f"Fecha del concierto: {concert.get('event_date', '')}\n"
             f"Comprar entradas: {concert.get('ticket_url', '')}"
         )
         
@@ -185,8 +182,7 @@ class GoogleCalendarService:
         event_body = {
             'summary': summary,
             'location': full_address,
-            'description': "
-".join(description_lines),
+            'description': "\n".join(description_lines),
             'start': {'dateTime': start_iso, 'timeZone': self.timezone},
             'end': {'dateTime': end_iso, 'timeZone': self.timezone},
             'reminders': {
@@ -207,7 +203,6 @@ class GoogleCalendarService:
             except Exception as e:
                 logger.error(f"Error creando evento en Google Calendar: {e}")
 
-        cal_url = self.get_calendar_link(summary, start_iso, 3, "
-".join(description_lines), full_address)
+        cal_url = self.get_calendar_link(summary, start_iso, 3, "\n".join(description_lines), full_address)
         concert["gcal_link"] = cal_url
         return True

@@ -61,7 +61,7 @@ class ArtistScanner:
             "/app/spotdl_cache/tracks_cache.json",
             "D:\\Docker\\media-server\\spotdl-sync\\cache\\tracks_cache.json",
             "D:/Docker/media-server/spotdl-sync/cache/tracks_cache.json",
-            r"\\100.95.217.45\omen D\Docker\media-server\spotdl-sync\cache\tracks_cache.json"
+            r"\\100.95.0.24\omen D\Docker\media-server\spotdl-sync\cache\tracks_cache.json"
         ]
         for c in list(candidates) + default_candidates:
             p = Path(c)

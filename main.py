@@ -15,7 +15,7 @@ from artist_scanner import ArtistScanner
 from concert_finder import ConcertFinder
 from gcalendar_service import GoogleCalendarService
 # WhatsAppService incrustado directamente para soporte 100% garantizado en Docker
-APP_URL = "http://100.95.217.45:8086"
+APP_URL = "http://100.95.0.24:8086"
 
 class WhatsAppService:
     def __init__(self, config_path="config.yaml"):
@@ -147,7 +147,7 @@ class WhatsAppService:
             return False
 
     def _send_http_gateway(self, message: str) -> bool:
-        api_url = self.config.get("whatsapp", {}).get("api_url", "http://100.95.217.45:8080/send-message")
+        api_url = self.config.get("whatsapp", {}).get("api_url", "http://100.95.0.24:8080/send-message")
         payload = { "number": self.phone_number, "message": message }
         try:
             resp = requests.post(api_url, json=payload, timeout=8)
@@ -488,9 +488,12 @@ async def upload_ticket(concert_id: str = Form(...), file: UploadFile = File(...
 def start_dashboard():
     import subprocess
     try:
-        subprocess.run(["cmd.exe", "/c", "git config --global --add safe.directory *"], cwd="D:/03_Trabajo/Dashboard_Global")
-        subprocess.run(["cmd.exe", "/c", "pm2 start server.js --name dashboard-global"], cwd="D:/03_Trabajo/Dashboard_Global")
-        subprocess.run(["cmd.exe", "/c", "pm2 restart dashboard-global"], cwd="D:/03_Trabajo/Dashboard_Global")
+        cwd = "D:/03_Trabajo/Dashboard_Global" if os.name == 'nt' else "/mnt/d/03_Trabajo/Dashboard_Global"
+        if os.name == 'nt':
+            subprocess.run(["cmd.exe", "/c", "git config --global --add safe.directory *"], cwd=cwd)
+            subprocess.run(["cmd.exe", "/c", "pm2 restart dashboard-global"], cwd=cwd)
+        else:
+            subprocess.run(["pm2", "restart", "dashboard-global"], cwd=cwd)
         return {"status": "ok", "message": "Dashboard Global iniciado en OMEN"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
